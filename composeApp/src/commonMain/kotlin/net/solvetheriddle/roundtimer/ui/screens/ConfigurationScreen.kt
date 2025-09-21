@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 import net.solvetheriddle.roundtimer.platform.getStatusBarManager
 import net.solvetheriddle.roundtimer.ui.components.ScrollableDial
 import net.solvetheriddle.roundtimer.ui.components.StyledCard
@@ -42,6 +43,8 @@ fun ConfigurationScreen(
             // Handle platforms that don't support status bar styling
         }
     }
+    val isLandscape = rememberIsLandscape()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         floatingActionButton = {
@@ -52,84 +55,92 @@ fun ConfigurationScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 GamesButton(onGamesClick)
-                val activeGame = games.find { it.id == activeGameId }
-                if (activeGame != null) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        if (activeGame.name.isNotEmpty()) {
-                            Text(
-                                text = activeGame.name,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                        Text(
-                            text = activeGame.date,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
+                if (!isLandscape) {
+                    GameInfo(games, activeGameId, Modifier.weight(1f))
                 }
                 HistoryButton(onHistoryClick)
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFF8F9FA),
-                            Color(0xFFE9ECEF)
-                        )
-                    )
-                )
-                .padding(paddingValues)
-        ) {
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+        Box(Modifier.fillMaxSize()) {
+            if (isLandscape) {
+                GameInfo(games, activeGameId, Modifier.align(Alignment.TopStart).padding(32.dp).padding(top = 16.dp))
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
             ) {
-                val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 0.9f
-                // Centered StyledCard with scrollable dial
-                StyledCard(
-                    modifier = Modifier.size(cardSize),
-                    verticalArrangement = Arrangement.Top
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Scrollable dial for time selection
-                    ScrollableDial(
-                        currentSeconds = state.configuredSeconds,
-                        onValueChange = onTimeChanged,
-                        formatTime = formatTime,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .heightIn(min = 200.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Start button
-                    Button(
-                        onClick = onStartTimer,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ),
+                    val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 0.9f
+                    // Centered StyledCard with scrollable dial
+                    StyledCard(
+                        modifier = Modifier.size(cardSize),
+                        verticalArrangement = Arrangement.Top
                     ) {
-                        Text(
-                            text = "START",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimary
+                        // Scrollable dial for time selection
+                        ScrollableDial(
+                            currentSeconds = state.configuredSeconds,
+                            onValueChange = onTimeChanged,
+                            formatTime = formatTime,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .heightIn(min = 200.dp)
                         )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Start button
+                        Button(
+                            onClick = onStartTimer,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                        ) {
+                            Text(
+                                text = "START",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GameInfo(
+    games: List<Game>,
+    activeGameId: String?,
+    modifier: Modifier = Modifier
+) {
+    val activeGame = games.find { it.id == activeGameId }
+    if (activeGame != null) {
+        Column(
+            modifier = modifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (activeGame.name.isNotEmpty()) {
+                Text(
+                    text = activeGame.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            Text(
+                text = activeGame.date,
+                style = MaterialTheme.typography.titleMedium
+            )
         }
     }
 }

@@ -1,14 +1,14 @@
 package net.solvetheriddle.roundtimer.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,10 +18,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,11 +44,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -92,28 +95,35 @@ fun GamesScreen(
         )
     }
 
+    val isLandscape = rememberIsLandscape()
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Games") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         },
-        bottomBar = {
-            Button(
-                onClick = { showNewGameDialog = true },
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
-                    .padding(bottom = 16.dp)
-            ) {
-                Text(
-                    "Start new game",
-                    fontSize = 30.sp
-                )
+        bottomBar = if (!isLandscape) {
+            {
+                Button(
+                    onClick = { showNewGameDialog = true },
+                    modifier = Modifier.fillMaxWidth().padding(16.dp)
+                        .padding(bottom = 32.dp)
+                ) {
+                    Text(
+                        "Start new game",
+                        fontSize = 30.sp,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
             }
+        } else {
+            { Spacer(Modifier.height(0.dp)) }
         }
     ) { paddingValues ->
         if (state.games.isEmpty()) {
@@ -124,32 +134,93 @@ fun GamesScreen(
                 Text("Your games will be shown here")
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-            ) {
-                items(state.games) { game ->
-                    val gameRounds = state.rounds.filter { it.gameId == game.id }
-                    val totalRounds = gameRounds.size
-                    val totalTime = gameRounds.sumOf { it.duration }
-                    val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
-                    GameListItem(
-                        game = game,
-                        isActive = game.id == state.activeGameId,
-                        totalRounds = totalRounds,
-                        averageTime = averageTime,
-                        formatTime = formatTime,
-                        onClick = {
-                            onSetActiveGame(game.id)
-                            onGameSelected()
-                        },
-                        onLongClick = {
-                            gameToEdit = game
-                            showEditDialog = true
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(paddingValues)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(start = 96.dp)
+                    ) {
+                        items(state.games) { game ->
+                            val gameRounds = state.rounds.filter { it.gameId == game.id }
+                            val totalRounds = gameRounds.size
+                            val totalTime = gameRounds.sumOf { it.duration }
+                            val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
+                            GameListItem(
+                                game = game,
+                                isActive = game.id == state.activeGameId,
+                                totalRounds = totalRounds,
+                                averageTime = averageTime,
+                                formatTime = formatTime,
+                                onClick = {
+                                    onSetActiveGame(game.id)
+                                    onGameSelected()
+                                },
+                                onLongClick = {
+                                    gameToEdit = game
+                                    showEditDialog = true
+                                }
+                            )
                         }
-                    )
+                        item {
+                            Spacer(Modifier.height(32.dp))
+                        }
+                    }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(vertical = 16.dp)
+                            .padding(horizontal = 48.dp)
+                            .padding(end = 48.dp)
+                            .width(150.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = { showNewGameDialog = true },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                text = "Start\nnew\ngame",
+                                fontSize = 30.sp,
+                                textAlign = TextAlign.Center,
+                                letterSpacing = 1.sp,
+                                lineHeight = 40.sp
+                            )
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    items(state.games) { game ->
+                        val gameRounds = state.rounds.filter { it.gameId == game.id }
+                        val totalRounds = gameRounds.size
+                        val totalTime = gameRounds.sumOf { it.duration }
+                        val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
+                        GameListItem(
+                            game = game,
+                            isActive = game.id == state.activeGameId,
+                            totalRounds = totalRounds,
+                            averageTime = averageTime,
+                            formatTime = formatTime,
+                            onClick = {
+                                onSetActiveGame(game.id)
+                                onGameSelected()
+                            },
+                            onLongClick = {
+                                gameToEdit = game
+                                showEditDialog = true
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -169,7 +240,8 @@ private fun NewGameDialog(onDismiss: () -> Unit, onStart: (String) -> Unit) {
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("Game Name (Optional)") },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onStart(name) }),
                 modifier = Modifier.focusRequester(focusRequester)
             )
             LaunchedEffect(Unit) {
@@ -197,7 +269,8 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("Game Name") },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onSave(name) }),
                 modifier = Modifier.focusRequester(focusRequester)
             )
             LaunchedEffect(Unit) {
@@ -225,7 +298,15 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun GameListItem(game: Game, isActive: Boolean, totalRounds: Int, averageTime: Int, formatTime: (Int) -> String, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun GameListItem(
+    game: Game,
+    isActive: Boolean,
+    totalRounds: Int,
+    averageTime: Int,
+    formatTime: (Int) -> String,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -249,8 +330,14 @@ private fun GameListItem(game: Game, isActive: Boolean, totalRounds: Int, averag
                     style = MaterialTheme.typography.titleLarge
                 )
             }
-            Text(text = game.date,
-                style = if (game.name.isEmpty()) { MaterialTheme.typography.titleLarge } else { MaterialTheme.typography.titleMedium })
+            Text(
+                text = game.date,
+                style = if (game.name.isEmpty()) {
+                    MaterialTheme.typography.titleLarge
+                } else {
+                    MaterialTheme.typography.titleMedium
+                }
+            )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(text = "$totalRounds rounds")

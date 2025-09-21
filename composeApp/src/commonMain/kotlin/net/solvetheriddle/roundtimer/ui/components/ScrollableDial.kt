@@ -1,12 +1,14 @@
 package net.solvetheriddle.roundtimer.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
@@ -85,11 +87,12 @@ fun ScrollableDial(
         }
     }
 
-    Box(modifier = modifier.height(200.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         VerticalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 64.dp)
+            modifier = Modifier.sizeIn(maxWidth = 180.dp, maxHeight = 180.dp),
+            pageSize = PageSize.Fixed(50.dp),
+            contentPadding = PaddingValues(vertical = 60.dp)
         ) { page ->
             val pageOffset = with(pagerState) {
                 (currentPage - page) + currentPageOffsetFraction
@@ -111,7 +114,7 @@ fun ScrollableDial(
                     text = formatTime(values[page]),
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
