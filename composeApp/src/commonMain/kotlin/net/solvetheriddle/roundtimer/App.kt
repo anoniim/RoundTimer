@@ -70,7 +70,7 @@ fun App() {
                         state = state,
                         onNavigateUp = { currentScreenRoute = Screen.Configuration.route },
                         onDeleteRound = viewModel::deleteRound,
-                        onResetHistory = viewModel::resetHistory,
+                        onResetHistory = viewModel::resetHistoryForGame,
                         formatTime = viewModel::formatTime
                     )
                 }

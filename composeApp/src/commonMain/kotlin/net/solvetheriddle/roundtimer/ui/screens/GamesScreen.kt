@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -39,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.TimerState
 
@@ -98,8 +101,12 @@ fun GamesScreen(
             Button(
                 onClick = { showNewGameDialog = true },
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    .padding(bottom = 16.dp)
             ) {
-                Text("Start New Game")
+                Text(
+                    "Start new game",
+                    fontSize = 30.sp
+                )
             }
         }
     ) { paddingValues ->
@@ -115,20 +122,22 @@ fun GamesScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
             ) {
                 items(state.games) { game ->
-                                        GameListItem(
-                                            game = game,
-                                            isActive = game.id == state.activeGameId,
-                                            onClick = { 
-                                                onSetActiveGame(game.id)
-                                                onGameSelected()
-                                            },
-                                            onLongClick = {
-                                                gameToEdit = game
-                                                showEditDialog = true
-                                            }
-                                        )                }
+                    GameListItem(
+                        game = game,
+                        isActive = game.id == state.activeGameId,
+                        onClick = {
+                            onSetActiveGame(game.id)
+                            onGameSelected()
+                        },
+                        onLongClick = {
+                            gameToEdit = game
+                            showEditDialog = true
+                        }
+                    )
+                }
             }
         }
     }
@@ -193,13 +202,14 @@ private fun GameListItem(game: Game, isActive: Boolean, onClick: () -> Unit, onL
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 90.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
             )
             .background(
                 color = if (isActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(16.dp)
             )
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -207,7 +217,10 @@ private fun GameListItem(game: Game, isActive: Boolean, onClick: () -> Unit, onL
     ) {
         Column {
             if (game.name.isNotEmpty()) {
-                Text(text = game.name)
+                Text(
+                    text = game.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
             Text(text = game.date)
         }

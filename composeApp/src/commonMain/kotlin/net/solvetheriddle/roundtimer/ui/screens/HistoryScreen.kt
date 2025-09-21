@@ -45,15 +45,17 @@ fun HistoryScreen(
     state: TimerState,
     onNavigateUp: () -> Unit,
     onDeleteRound: (String) -> Unit,
-    onResetHistory: () -> Unit,
+    onResetHistory: (String) -> Unit,
     formatTime: (Int) -> String
 ) {
+    val filteredRounds = state.rounds.filter { it.gameId == state.activeGameId }
+
     // Calculate statistics
-    val totalRounds = state.rounds.size
-    val totalTime = state.rounds.sumOf { it.duration }
+    val totalRounds = filteredRounds.size
+    val totalTime = filteredRounds.sumOf { it.duration }
     val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
-    val shortestRound = if (totalRounds > 0) state.rounds.minOf { it.duration } else 0
-    val longestRound = if (totalRounds > 0) state.rounds.maxOf { it.duration } else 0
+    val shortestRound = if (totalRounds > 0) filteredRounds.minOf { it.duration } else 0
+    val longestRound = if (totalRounds > 0) filteredRounds.maxOf { it.duration } else 0
 
     Scaffold(
         topBar = {
@@ -68,9 +70,9 @@ fun HistoryScreen(
                     }
                 },
                 actions = {
-                    if (state.rounds.isNotEmpty()) {
+                    if (filteredRounds.isNotEmpty() && state.activeGameId != null) {
                         TextButton(
-                            onClick = onResetHistory,
+                            onClick = { onResetHistory(state.activeGameId!!) },
                             colors = ButtonDefaults.textButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error
                             )
@@ -92,7 +94,7 @@ fun HistoryScreen(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentAlignment = Alignment.TopCenter
         ) {
-            if (state.rounds.isEmpty()) {
+            if (filteredRounds.isEmpty()) {
                 // Empty state
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -180,7 +182,7 @@ fun HistoryScreen(
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     items(
-                                        items = state.rounds,
+                                        items = filteredRounds,
                                         key = { it.id }
                                     ) { round ->
                                         SwipeableRoundItem(
@@ -242,7 +244,7 @@ fun HistoryScreen(
 
                         // Round items
                         items(
-                            items = state.rounds,
+                            items = filteredRounds,
                             key = { it.id }
                         ) { round ->
                             SwipeableRoundItem(

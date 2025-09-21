@@ -51,13 +51,14 @@ class TimerViewModel : ViewModel() {
                 try {
                     val savedRounds = storage.loadRounds()
                     val configuredTime = storage.loadConfiguredTime() ?: _state.value.configuredTime
-                    val games = storage.loadGames()
+                    val games = storage.loadGames().sortedByDescending { it.id }
+                    val activeGameId = storage.loadActiveGameId() ?: games.firstOrNull()?.id
                     _state.value = _state.value.copy(
                         rounds = savedRounds,
                         configuredTime = configuredTime,
                         currentTime = configuredTime,
                         games = games,
-                        activeGameId = games.firstOrNull()?.id
+                        activeGameId = activeGameId
                     )
                 } catch (e: Exception) {
                     // Continue with empty list
@@ -239,13 +240,15 @@ class TimerViewModel : ViewModel() {
         }
     }
 
-    fun resetHistory() {
-        _state.value = _state.value.copy(rounds = emptyList())
+    fun resetHistoryForGame(gameId: String) {
+        val currentState = _state.value
+        val newRounds = currentState.rounds.filter { it.gameId != gameId }
+        _state.value = currentState.copy(rounds = newRounds)
 
         // Clear storage asynchronously
         viewModelScope.launch {
             try {
-                storage.clearAll()
+                storage.saveRounds(newRounds)
             } catch (e: Exception) {
                 // Storage clear failed, but continue with UI update
             }
@@ -264,7 +267,7 @@ class TimerViewModel : ViewModel() {
 
     fun createNewGame(name: String = "") {
         val newGame = Game(id = Clock.System.now().toEpochMilliseconds().toString(), date = getCurrentDate(), name = name)
-        val newGames = _state.value.games + newGame
+        val newGames = (_state.value.games + newGame).sortedByDescending { it.id }
         _state.value = _state.value.copy(games = newGames, activeGameId = newGame.id)
         viewModelScope.launch {
             storage.saveGames(newGames)
@@ -273,6 +276,9 @@ class TimerViewModel : ViewModel() {
 
     fun setActiveGame(gameId: String) {
         _state.value = _state.value.copy(activeGameId = gameId)
+        viewModelScope.launch {
+            storage.saveActiveGameId(gameId)
+        }
     }
 
     fun updateGameName(gameId: String, name: String) {
@@ -282,7 +288,7 @@ class TimerViewModel : ViewModel() {
             } else {
                 it
             }
-        }
+        }.sortedByDescending { it.id }
         _state.value = _state.value.copy(games = updatedGames)
         viewModelScope.launch {
             storage.saveGames(updatedGames)
@@ -291,7 +297,7 @@ class TimerViewModel : ViewModel() {
 
     fun deleteGame(gameId: String) {
         val currentState = _state.value
-        val newGames = currentState.games.filter { it.id != gameId }
+        val newGames = currentState.games.filter { it.id != gameId }.sortedByDescending { it.id }
         val newActiveGameId = if (currentState.activeGameId == gameId) {
             newGames.firstOrNull()?.id
         } else {
@@ -300,6 +306,7 @@ class TimerViewModel : ViewModel() {
         _state.value = currentState.copy(games = newGames, activeGameId = newActiveGameId)
         viewModelScope.launch {
             storage.saveGames(newGames)
+            storage.saveActiveGameId(newActiveGameId)
         }
     }
 

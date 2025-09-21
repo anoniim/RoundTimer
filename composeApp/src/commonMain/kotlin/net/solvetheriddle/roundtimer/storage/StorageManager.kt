@@ -29,6 +29,7 @@ class RoundTimerStorage(
         private const val ROUNDS_KEY = "rounds_data"
         private const val GAMES_KEY = "games_data"
         private const val CONFIGURED_TIME_KEY = "configured_time"
+        private const val ACTIVE_GAME_ID_KEY = "active_game_id"
         private const val VERSION_KEY = "storage_version"
         private const val CURRENT_VERSION = "1.0"
     }
@@ -117,6 +118,32 @@ class RoundTimerStorage(
             // Return empty list if loading fails
         }
         return emptyList()
+    }
+
+    /**
+     * Save active game ID to persistent storage
+     */
+    suspend fun saveActiveGameId(gameId: String?) {
+        try {
+            if (gameId != null) {
+                platformStorage.saveString(ACTIVE_GAME_ID_KEY, gameId)
+            } else {
+                platformStorage.remove(ACTIVE_GAME_ID_KEY)
+            }
+        } catch (e: Exception) {
+            throw StorageException("Failed to save active game ID", e)
+        }
+    }
+
+    /**
+     * Load active game ID from persistent storage
+     */
+    suspend fun loadActiveGameId(): String? {
+        return try {
+            platformStorage.loadString(ACTIVE_GAME_ID_KEY)
+        } catch (e: Exception) {
+            null
+        }
     }
     
     /**
