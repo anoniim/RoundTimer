@@ -30,9 +30,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -105,7 +108,10 @@ fun GamesScreen(
                     IconButton(onClick = onNavigateUp) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
             )
         },
         bottomBar = if (!isLandscape) {
@@ -113,12 +119,14 @@ fun GamesScreen(
                 Button(
                     onClick = { showNewGameDialog = true },
                     modifier = Modifier.fillMaxWidth().padding(16.dp)
-                        .padding(bottom = 32.dp)
+                        .padding(bottom = 32.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text(
-                        "Start new game",
+                        "START NEW GAME",
                         fontSize = 30.sp,
-                        modifier = Modifier.padding(vertical = 16.dp)
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
@@ -128,21 +136,100 @@ fun GamesScreen(
     ) { paddingValues ->
         if (state.games.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                modifier = Modifier.fillMaxSize()
+                    .padding(paddingValues)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.background,
+                            )
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Your games will be shown here")
+                Text("Your games will be shown here", color = MaterialTheme.colorScheme.onBackground)
             }
         } else {
-            if (isLandscape) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues)
-                ) {
+            Box(
+                Modifier
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.background,
+                            )
+                        )
+                    )
+                    .padding(paddingValues)
+            ) {
+
+                if (isLandscape) {
+                    Row(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .padding(start = 96.dp)
+                        ) {
+                            items(state.games) { game ->
+                                val gameRounds = state.rounds.filter { it.gameId == game.id }
+                                val totalRounds = gameRounds.size
+                                val totalTime = gameRounds.sumOf { it.duration }
+                                val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
+                                GameListItem(
+                                    game = game,
+                                    isActive = game.id == state.activeGameId,
+                                    totalRounds = totalRounds,
+                                    averageTime = averageTime,
+                                    formatTime = formatTime,
+                                    onClick = {
+                                        onSetActiveGame(game.id)
+                                        onGameSelected()
+                                    },
+                                    onLongClick = {
+                                        gameToEdit = game
+                                        showEditDialog = true
+                                    }
+                                )
+                            }
+                            item {
+                                Spacer(Modifier.height(32.dp))
+                            }
+                        }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(vertical = 16.dp)
+                                .padding(horizontal = 48.dp)
+                                .padding(end = 48.dp)
+                                .width(150.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Button(
+                                onClick = { showNewGameDialog = true },
+                                modifier = Modifier.fillMaxSize(),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Text(
+                                    text = "START\nNEW\nGAME",
+                                    fontSize = 20.sp,
+                                    textAlign = TextAlign.Center,
+                                    letterSpacing = 1.sp,
+                                    lineHeight = 40.sp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
+                    }
+                } else {
                     LazyColumn(
                         modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .padding(start = 96.dp)
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp)
                     ) {
                         items(state.games) { game ->
                             val gameRounds = state.rounds.filter { it.gameId == game.id }
@@ -165,61 +252,6 @@ fun GamesScreen(
                                 }
                             )
                         }
-                        item {
-                            Spacer(Modifier.height(32.dp))
-                        }
-                    }
-                    Column(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .padding(vertical = 16.dp)
-                            .padding(horizontal = 48.dp)
-                            .padding(end = 48.dp)
-                            .width(150.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Button(
-                            onClick = { showNewGameDialog = true },
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(
-                                text = "Start\nnew\ngame",
-                                fontSize = 30.sp,
-                                textAlign = TextAlign.Center,
-                                letterSpacing = 1.sp,
-                                lineHeight = 40.sp
-                            )
-                        }
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 16.dp)
-                ) {
-                    items(state.games) { game ->
-                        val gameRounds = state.rounds.filter { it.gameId == game.id }
-                        val totalRounds = gameRounds.size
-                        val totalTime = gameRounds.sumOf { it.duration }
-                        val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
-                        GameListItem(
-                            game = game,
-                            isActive = game.id == state.activeGameId,
-                            totalRounds = totalRounds,
-                            averageTime = averageTime,
-                            formatTime = formatTime,
-                            onClick = {
-                                onSetActiveGame(game.id)
-                                onGameSelected()
-                            },
-                            onLongClick = {
-                                gameToEdit = game
-                                showEditDialog = true
-                            }
-                        )
                     }
                 }
             }
@@ -234,7 +266,7 @@ private fun NewGameDialog(onDismiss: () -> Unit, onStart: (String) -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Start New Game") },
+        title = { Text("Start New Game", color = MaterialTheme.colorScheme.onSurface) },
         text = {
             OutlinedTextField(
                 value = name,
@@ -242,17 +274,21 @@ private fun NewGameDialog(onDismiss: () -> Unit, onStart: (String) -> Unit) {
                 label = { Text("Game Name (Optional)") },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onStart(name) }),
-                modifier = Modifier.focusRequester(focusRequester)
+                modifier = Modifier.focusRequester(focusRequester),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                )
             )
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()
             }
         },
         confirmButton = {
-            Button(onClick = { onStart(name) }) {
-                Text("Start")
+            Button(onClick = { onStart(name) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                Text("START", color = MaterialTheme.colorScheme.onPrimary)
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -263,7 +299,7 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Game Name") },
+        title = { Text("Edit Game Name", color = MaterialTheme.colorScheme.onSurface) },
         text = {
             OutlinedTextField(
                 value = name,
@@ -271,7 +307,10 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
                 label = { Text("Game Name") },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onSave(name) }),
-                modifier = Modifier.focusRequester(focusRequester)
+                modifier = Modifier.focusRequester(focusRequester),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                )
             )
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()
@@ -280,19 +319,25 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
         confirmButton = {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
-                    Text("Delete")
+                    Text("Delete", color = MaterialTheme.colorScheme.onError)
                 }
                 Row {
-                    Button(onClick = onDismiss) {
-                        Text("Cancel")
+                    Button(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSecondaryContainer)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { onSave(name) }) {
-                        Text("Save")
+                    Button(
+                        onClick = { onSave(name) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Save", color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -336,12 +381,13 @@ private fun GameListItem(
                     MaterialTheme.typography.titleLarge
                 } else {
                     MaterialTheme.typography.titleMedium
-                }
+                },
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text(text = "$totalRounds rounds")
-            Text(text = "Avg ${formatTime(averageTime)}")
+            Text(text = "$totalRounds rounds", color = MaterialTheme.colorScheme.onSurface)
+            Text(text = "Avg ${formatTime(averageTime)}", color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

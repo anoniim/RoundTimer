@@ -2,6 +2,7 @@ package net.solvetheriddle.roundtimer
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
+import net.solvetheriddle.roundtimer.ui.theme.RoundTimerTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,7 +22,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
+    RoundTimerTheme {
         val viewModel: TimerViewModel = viewModel { TimerViewModel() }
         val state by viewModel.state.collectAsState()
         var currentScreenRoute by rememberSaveable { mutableStateOf(Screen.Configuration.route) }

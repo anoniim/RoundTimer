@@ -30,7 +30,8 @@ fun StyledCard(
     modifier: Modifier = Modifier,
     size: Dp = 350.dp,
     verticalArrangement: Arrangement.Vertical = Arrangement.Center,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
+    colors: CardColors
 ) {
     // Card container with padding to prevent shadow clipping
     Box(
@@ -44,6 +45,7 @@ fun StyledCard(
             modifier = Modifier.fillMaxSize(),
             shape = RoundedCornerShape(40.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+            colors = colors
         ) {
             Column(
                 modifier = Modifier

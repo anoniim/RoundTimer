@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,6 +68,14 @@ fun ConfigurationScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.background,
+                            )
+                        )
+                    )
                     .padding(paddingValues),
             ) {
                 BoxWithConstraints(
@@ -79,40 +86,42 @@ fun ConfigurationScreen(
                     // Centered StyledCard with scrollable dial
                     StyledCard(
                         modifier = Modifier.size(cardSize),
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        // Scrollable dial for time selection
-                        ScrollableDial(
-                            currentSeconds = state.configuredSeconds,
-                            onValueChange = onTimeChanged,
-                            formatTime = formatTime,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .heightIn(min = 200.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Start button
-                        Button(
-                            onClick = onStartTimer,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                        ) {
-                            Text(
-                                text = "START",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onPrimary
+                        verticalArrangement = Arrangement.Top,
+                        content = {
+                            // Scrollable dial for time selection
+                            ScrollableDial(
+                                currentSeconds = state.configuredSeconds,
+                                onValueChange = onTimeChanged,
+                                formatTime = formatTime,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .heightIn(min = 200.dp)
                             )
-                        }
-                    }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            // Start button
+                            Button(
+                                onClick = onStartTimer,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                ),
+                            ) {
+                                Text(
+                                    text = "START",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    )
                 }
             }
         }
@@ -150,8 +159,8 @@ private fun GamesButton(onGamesClick: () -> Unit) {
     FloatingActionButton(
         modifier = Modifier.size(68.dp),
         onClick = onGamesClick,
-        containerColor = MaterialTheme.colorScheme.secondary,
-        contentColor = MaterialTheme.colorScheme.onSecondary
+        containerColor = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
     ) {
         Icon(
             imageVector = Icons.Filled.List,
@@ -165,8 +174,8 @@ private fun HistoryButton(onHistoryClick: () -> Unit) {
     FloatingActionButton(
         modifier = Modifier.size(68.dp),
         onClick = onHistoryClick,
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
         Icon(
             imageVector = Icons.Filled.History,

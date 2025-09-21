@@ -27,6 +27,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -83,7 +85,10 @@ fun HistoryScreen(
                             )
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
             )
         }
     ) { innerPadding ->
@@ -91,7 +96,16 @@ fun HistoryScreen(
         val isLandscape = rememberIsLandscape()
 
         Box(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier = Modifier.fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.background,
+                        )
+                    )
+                )
+                .padding(innerPadding),
             contentAlignment = Alignment.TopCenter
         ) {
             if (filteredRounds.isEmpty()) {
@@ -136,7 +150,7 @@ fun HistoryScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                containerColor = MaterialTheme.colorScheme.background
                             ),
                             shape = RoundedCornerShape(16.dp)
                         ) {
@@ -148,6 +162,7 @@ fun HistoryScreen(
                                 Text(
                                     text = "Statistics",
                                     style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(bottom = 12.dp)
                                 )
                                 Column(
@@ -213,7 +228,7 @@ fun HistoryScreen(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    containerColor = MaterialTheme.colorScheme.background
                                 ),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
@@ -225,6 +240,7 @@ fun HistoryScreen(
                                     Text(
                                         text = "Statistics",
                                         style = MaterialTheme.typography.titleLarge,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                                         modifier = Modifier.padding(bottom = 12.dp)
                                     )
                                     Column(
@@ -364,7 +380,7 @@ private fun RoundItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -399,7 +415,7 @@ private fun RoundItem(
                 text = formatTime(round.duration + round.overtime),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
     }

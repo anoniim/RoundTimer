@@ -10,7 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -18,6 +18,12 @@ import androidx.compose.ui.unit.sp
 import net.solvetheriddle.roundtimer.model.TimerState
 import net.solvetheriddle.roundtimer.platform.getStatusBarManager
 import net.solvetheriddle.roundtimer.ui.components.StyledCard
+import net.solvetheriddle.roundtimer.ui.theme.GreenBackground
+import net.solvetheriddle.roundtimer.ui.theme.GreenBox
+import net.solvetheriddle.roundtimer.ui.theme.OrangeBackground
+import net.solvetheriddle.roundtimer.ui.theme.OrangeBox
+import net.solvetheriddle.roundtimer.ui.theme.RedBackground
+import net.solvetheriddle.roundtimer.ui.theme.RedBox
 
 @Composable
 fun ActiveTimerScreen(
@@ -62,16 +68,24 @@ fun ActiveTimerScreen(
     } else 1f
 
     // Determine background color based on remaining time
-    val backgroundColor = when {
-        state.isOvertime -> Color(0xFFDC2626) // Red for overtime
-        state.currentSeconds <= 30 -> Color(0xFFDC2626) // Red
-        state.currentSeconds <= 60 -> Color(0xFFF59E0B) // Orange
-//        state.currentSeconds <= 60 -> Color(0xFFEAB308) // Yellow
-        else -> Color(0xFF10B981) // Green
+    val activeColor = when {
+        state.isOvertime -> RedBackground // Red for overtime
+        state.currentSeconds <= 36 -> RedBackground // Red
+        state.currentSeconds <= 60 -> OrangeBackground // Orange
+        else -> GreenBackground // Green
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        RedBackground.copy(alpha = 0.1f),
+                        OrangeBackground.copy(alpha = 0.1f),
+                        GreenBackground.copy(alpha = 0.1f),
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         // Progress fill background
@@ -84,7 +98,7 @@ fun ActiveTimerScreen(
                     .fillMaxWidth()
                     .fillMaxHeight(fraction = progressPercentage)
                     .align(Alignment.BottomCenter)
-                    .background(backgroundColor.copy(alpha = 0.5f))
+                    .background(activeColor.copy(alpha = 0.5f))
             )
         }
 
@@ -97,39 +111,45 @@ fun ActiveTimerScreen(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ),
-            size = boxWidth
-        ) {
-            // Main countdown display
-            Text(
-                text = formatTime(state.currentSeconds),
-                fontSize = 96.sp, // Extra large as per README (8xl equivalent)
-                fontWeight = FontWeight.Bold,
-                color = if (state.isOvertime) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
-                lineHeight = 96.sp
-            )
-
-            // Overtime display
-            if (state.isOvertime && state.overtimeTime > 0) {
-                Spacer(modifier = Modifier.height(8.dp))
+            size = boxWidth,
+            content = {
+                // Main countdown display
                 Text(
-                    text = "+${formatTime(state.overtimeSeconds)}",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFDC2626),
-                    textAlign = TextAlign.Center
+                    text = formatTime(state.currentSeconds),
+                    fontSize = 96.sp, // Extra large as per README (8xl equivalent)
+                    fontWeight = FontWeight.Bold,
+                    color = activeColor,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 96.sp
                 )
-            }
 
-            Spacer(modifier = Modifier.height(48.dp))
+                // Overtime display
+                if (state.isOvertime && state.overtimeTime > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "+${formatTime(state.overtimeSeconds)}",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = RedBackground,
+                        textAlign = TextAlign.Center
+                    )
+                }
 
-            // Stop button
-            Text(
-                text = "STOP",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.SemiBold,
-//                        color = MaterialTheme.colorScheme.onError
-            )
-        }
+                Spacer(modifier = Modifier.height(48.dp))
+
+                // Stop button
+                Text(
+                    text = "STOP",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            colors = CardDefaults.cardColors(containerColor = when (activeColor) {
+                RedBackground -> RedBox
+                OrangeBackground -> OrangeBox
+                else -> GreenBox
+            })
+        )
     }
 }
