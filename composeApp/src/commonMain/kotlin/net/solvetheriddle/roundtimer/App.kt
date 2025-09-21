@@ -84,7 +84,8 @@ fun App() {
                         onSetActiveGame = viewModel::setActiveGame,
                         onUpdateGameName = viewModel::updateGameName,
                         onDeleteGame = viewModel::deleteGame,
-                        onGameSelected = { currentScreenRoute = Screen.Configuration.route }
+                        onGameSelected = { currentScreenRoute = Screen.Configuration.route },
+                        formatTime = viewModel::formatTime
                     )
                 }
             }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -33,13 +34,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.solvetheriddle.roundtimer.model.Game
@@ -54,7 +59,8 @@ fun GamesScreen(
     onSetActiveGame: (String) -> Unit,
     onUpdateGameName: (String, String) -> Unit,
     onDeleteGame: (String) -> Unit,
-    onGameSelected: () -> Unit
+    onGameSelected: () -> Unit,
+    formatTime: (Int) -> String
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
     var gameToEdit by remember { mutableStateOf<Game?>(null) }
@@ -125,9 +131,16 @@ fun GamesScreen(
                     .padding(horizontal = 16.dp)
             ) {
                 items(state.games) { game ->
+                    val gameRounds = state.rounds.filter { it.gameId == game.id }
+                    val totalRounds = gameRounds.size
+                    val totalTime = gameRounds.sumOf { it.duration }
+                    val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
                     GameListItem(
                         game = game,
                         isActive = game.id == state.activeGameId,
+                        totalRounds = totalRounds,
+                        averageTime = averageTime,
+                        formatTime = formatTime,
                         onClick = {
                             onSetActiveGame(game.id)
                             onGameSelected()
@@ -146,6 +159,8 @@ fun GamesScreen(
 @Composable
 private fun NewGameDialog(onDismiss: () -> Unit, onStart: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Start New Game") },
@@ -153,8 +168,13 @@ private fun NewGameDialog(onDismiss: () -> Unit, onStart: (String) -> Unit) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Game Name (Optional)") }
+                label = { Text("Game Name (Optional)") },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                modifier = Modifier.focusRequester(focusRequester)
             )
+            LaunchedEffect(Unit) {
+                focusRequester.requestFocus()
+            }
         },
         confirmButton = {
             Button(onClick = { onStart(name) }) {
@@ -167,6 +187,8 @@ private fun NewGameDialog(onDismiss: () -> Unit, onStart: (String) -> Unit) {
 @Composable
 private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (String) -> Unit, onDelete: () -> Unit) {
     var name by remember { mutableStateOf(game.name) }
+    val focusRequester = remember { FocusRequester() }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Game Name") },
@@ -174,8 +196,13 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Game Name") }
+                label = { Text("Game Name") },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                modifier = Modifier.focusRequester(focusRequester)
             )
+            LaunchedEffect(Unit) {
+                focusRequester.requestFocus()
+            }
         },
         confirmButton = {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -198,7 +225,7 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun GameListItem(game: Game, isActive: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun GameListItem(game: Game, isActive: Boolean, totalRounds: Int, averageTime: Int, formatTime: (Int) -> String, onClick: () -> Unit, onLongClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -219,10 +246,15 @@ private fun GameListItem(game: Game, isActive: Boolean, onClick: () -> Unit, onL
             if (game.name.isNotEmpty()) {
                 Text(
                     text = game.name,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleLarge
                 )
             }
-            Text(text = game.date)
+            Text(text = game.date,
+                style = if (game.name.isEmpty()) { MaterialTheme.typography.titleLarge } else { MaterialTheme.typography.titleMedium })
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(text = "$totalRounds rounds")
+            Text(text = "Avg ${formatTime(averageTime)}")
         }
     }
 }
