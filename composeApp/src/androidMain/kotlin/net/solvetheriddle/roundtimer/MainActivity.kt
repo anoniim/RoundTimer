@@ -14,6 +14,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        // Set current activity
+        CurrentActivity.INSTANCE = this
+
         // Initialize AppContext
         AppContext.initialize(this)
         

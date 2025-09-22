@@ -13,6 +13,7 @@ import net.solvetheriddle.roundtimer.model.AudioCue
 import net.solvetheriddle.roundtimer.model.Sound
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.platform.getScreenLocker
 import net.solvetheriddle.roundtimer.platform.getSoundPlayer
 import net.solvetheriddle.roundtimer.storage.RoundTimerStorage
 import net.solvetheriddle.roundtimer.storage.createPlatformStorage
@@ -26,6 +27,7 @@ class TimerViewModel : ViewModel() {
         RoundTimerStorage(createPlatformStorage())
     }
     private val soundPlayer by lazy { getSoundPlayer() }
+    private val screenLocker by lazy { getScreenLocker() }
     private val _state = MutableStateFlow(TimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
 
@@ -70,18 +72,18 @@ class TimerViewModel : ViewModel() {
         }
     }
 
-    fun startTimer() {
-        val currentState = _state.value
-        _state.value = currentState.copy(
-            isRunning = true,
-            currentTime = currentState.configuredTime,
-            overtimeTime = 0L,
-            isOvertime = false
-        )
-
-        startCountdown()
-    }
-
+        fun startTimer() {
+            screenLocker.lock()
+            val currentState = _state.value
+            _state.value = currentState.copy(
+                isRunning = true,
+                currentTime = currentState.configuredTime,
+                overtimeTime = 0L,
+                isOvertime = false
+            )
+            
+            startCountdown()
+        }
     private fun startCountdown() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
@@ -135,6 +137,7 @@ class TimerViewModel : ViewModel() {
 
     @OptIn(ExperimentalTime::class)
     fun stopTimer() {
+        screenLocker.unlock()
         timerJob?.cancel()
         audioJob?.cancel()
         soundPlayer.stopSound()
