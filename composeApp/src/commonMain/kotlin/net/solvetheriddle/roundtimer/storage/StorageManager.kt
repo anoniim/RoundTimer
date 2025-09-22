@@ -26,8 +26,31 @@ class RoundTimerStorage(
     
     companion object {
         private const val ROUNDS_KEY = "rounds_data"
+        private const val CONFIGURED_TIME_KEY = "configured_time"
         private const val VERSION_KEY = "storage_version"
         private const val CURRENT_VERSION = "1.0"
+    }
+
+    /**
+     * Save configured time to persistent storage
+     */
+    suspend fun saveConfiguredTime(time: Long) {
+        try {
+            platformStorage.saveLong(CONFIGURED_TIME_KEY, time)
+        } catch (e: Exception) {
+            throw StorageException("Failed to save configured time", e)
+        }
+    }
+
+    /**
+     * Load configured time from persistent storage
+     */
+    suspend fun loadConfiguredTime(): Long? {
+        return try {
+            platformStorage.loadLong(CONFIGURED_TIME_KEY)
+        } catch (e: Exception) {
+            null
+        }
     }
     
     /**

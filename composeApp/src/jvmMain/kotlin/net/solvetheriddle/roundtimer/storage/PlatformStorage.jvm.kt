@@ -31,6 +31,21 @@ actual class PlatformStorage() {
             properties.getProperty(key)
         }
     }
+
+    actual suspend fun saveLong(key: String, value: Long) {
+        withContext(Dispatchers.IO) {
+            val properties = loadProperties()
+            properties[key] = value.toString()
+            saveProperties(properties)
+        }
+    }
+
+    actual suspend fun loadLong(key: String): Long? {
+        return withContext(Dispatchers.IO) {
+            val properties = loadProperties()
+            properties.getProperty(key)?.toLongOrNull()
+        }
+    }
     
     actual suspend fun remove(key: String) {
         withContext(Dispatchers.IO) {

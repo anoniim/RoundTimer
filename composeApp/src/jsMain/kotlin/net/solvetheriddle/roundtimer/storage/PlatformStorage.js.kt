@@ -26,6 +26,26 @@ actual class PlatformStorage() {
             }
         }
     }
+
+    actual suspend fun saveLong(key: String, value: Long) {
+        withContext(Dispatchers.Default) {
+            try {
+                localStorage.setItem("${keyPrefix}$key", value.toString())
+            } catch (e: Exception) {
+                throw e
+            }
+        }
+    }
+
+    actual suspend fun loadLong(key: String): Long? {
+        return withContext(Dispatchers.Default) {
+            try {
+                localStorage.getItem("${keyPrefix}$key")?.toLongOrNull()
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
     
     actual suspend fun remove(key: String) {
         withContext(Dispatchers.Default) {

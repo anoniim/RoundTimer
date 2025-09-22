@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -71,8 +72,16 @@ fun ScrollableDial(
         pageCount = { values.size }
     )
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
+        // Ignore the very first value reported by the pager to give the ViewModel time to load the persisted value
+        snapshotFlow { pagerState.currentPage }.drop(1).collect { page ->
             onValueChange(values[page])
+        }
+    }
+
+    LaunchedEffect(currentSeconds) {
+        val page = values.indexOf(currentSeconds).coerceAtLeast(0)
+        if (page != pagerState.currentPage) {
+            pagerState.scrollToPage(page)
         }
     }
 

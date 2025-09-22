@@ -32,13 +32,18 @@ class TimerViewModel : ViewModel() {
     val state: StateFlow<TimerState> = _state.asStateFlow()
 
     init {
-        // Initialize storage and load saved rounds
+        // Initialize storage and load saved data
         try {
             storage.initialize()
             viewModelScope.launch {
                 try {
                     val savedRounds = storage.loadRounds()
-                    _state.value = _state.value.copy(rounds = savedRounds)
+                    val configuredTime = storage.loadConfiguredTime() ?: _state.value.configuredTime
+                    _state.value = _state.value.copy(
+                        rounds = savedRounds,
+                        configuredTime = configuredTime,
+                        currentTime = configuredTime
+                    )
                 } catch (e: Exception) {
                     // Continue with empty list
                 }
@@ -69,6 +74,9 @@ class TimerViewModel : ViewModel() {
                 configuredTime = milliseconds,
                 currentTime = milliseconds
             )
+            viewModelScope.launch {
+                storage.saveConfiguredTime(milliseconds)
+            }
         }
     }
 

@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import net.solvetheriddle.roundtimer.ui.screens.ActiveTimerScreen
@@ -22,57 +23,57 @@ fun App() {
     MaterialTheme {
         val viewModel: TimerViewModel = viewModel { TimerViewModel() }
         val state by viewModel.state.collectAsState()
-        var currentScreen by remember { mutableStateOf<Screen>(Screen.Configuration) }
+        var currentScreenRoute by rememberSaveable { mutableStateOf(Screen.Configuration.route) }
 
-        Crossfade(targetState = currentScreen) { screen ->
-            when (screen) {
-            is Screen.Configuration -> {
-                ConfigurationScreen(
-                    state = state,
-                    onTimeChanged = viewModel::updateConfiguredTime,
-                    onStartTimer = {
-                        viewModel.startTimer()
-                        currentScreen = Screen.ActiveTimer
-                    },
-                    onHistoryClick = { currentScreen = Screen.History },
-                    formatTime = viewModel::formatTime
-                )
+        Crossfade(targetState = currentScreenRoute) { route ->
+            when (route) {
+                Screen.Configuration.route -> {
+                    ConfigurationScreen(
+                        state = state,
+                        onTimeChanged = viewModel::updateConfiguredTime,
+                        onStartTimer = {
+                            viewModel.startTimer()
+                            currentScreenRoute = Screen.ActiveTimer.route
+                        },
+                        onHistoryClick = { currentScreenRoute = Screen.History.route },
+                        formatTime = viewModel::formatTime
+                    )
+                }
+                Screen.ActiveTimer.route -> {
+                    ActiveTimerScreen(
+                        state = state,
+                        onStopTimer = {
+                            viewModel.stopTimer()
+                            currentScreenRoute = Screen.Configuration.route
+                        },
+                        formatTime = viewModel::formatTime
+                    )
+                }
+                Screen.History.route -> {
+                    HistoryScreen(
+                        state = state,
+                        onNavigateUp = { currentScreenRoute = Screen.Configuration.route },
+                        onDeleteRound = viewModel::deleteRound,
+                        onResetHistory = viewModel::resetHistory,
+                        formatTime = viewModel::formatTime
+                    )
+                }
             }
-            is Screen.ActiveTimer -> {
-                ActiveTimerScreen(
-                    state = state,
-                    onStopTimer = {
-                        viewModel.stopTimer()
-                        currentScreen = Screen.Configuration
-                    },
-                    formatTime = viewModel::formatTime
-                )
-            }
-            is Screen.History -> {
-                HistoryScreen(
-                    state = state,
-                    onNavigateUp = { currentScreen = Screen.Configuration },
-                    onDeleteRound = viewModel::deleteRound,
-                    onResetHistory = viewModel::resetHistory,
-                    formatTime = viewModel::formatTime
-                )
-            }
-        }
         }
 
         // Handle timer state changes from outside the UI
         LaunchedEffect(state.isRunning) {
-            if (state.isRunning && currentScreen !is Screen.ActiveTimer) {
-                currentScreen = Screen.ActiveTimer
-            } else if (!state.isRunning && currentScreen is Screen.ActiveTimer) {
-                currentScreen = Screen.Configuration
+            if (state.isRunning && currentScreenRoute != Screen.ActiveTimer.route) {
+                currentScreenRoute = Screen.ActiveTimer.route
+            } else if (!state.isRunning && currentScreenRoute == Screen.ActiveTimer.route) {
+                currentScreenRoute = Screen.Configuration.route
             }
         }
     }
 }
 
-sealed class Screen {
-    data object Configuration : Screen()
-    data object ActiveTimer : Screen()
-    data object History : Screen()
+sealed class Screen(val route: String) {
+    data object Configuration : Screen("configuration")
+    data object ActiveTimer : Screen("active_timer")
+    data object History : Screen("history")
 }

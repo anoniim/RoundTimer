@@ -20,6 +20,22 @@ actual class PlatformStorage() {
             userDefaults.stringForKey("${keyPrefix}$key")
         }
     }
+
+    actual suspend fun saveLong(key: String, value: Long) {
+        withContext(Dispatchers.IO) {
+            userDefaults.setInteger(value, "${keyPrefix}$key")
+        }
+    }
+
+    actual suspend fun loadLong(key: String): Long? {
+        return withContext(Dispatchers.IO) {
+            if (userDefaults.objectForKey("${keyPrefix}$key") != null) {
+                userDefaults.integerForKey("${keyPrefix}$key")
+            } else {
+                null
+            }
+        }
+    }
     
     actual suspend fun remove(key: String) {
         withContext(Dispatchers.IO) {
