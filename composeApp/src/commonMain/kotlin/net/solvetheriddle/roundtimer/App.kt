@@ -1,6 +1,5 @@
 package net.solvetheriddle.roundtimer
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -27,7 +26,7 @@ fun App() {
         val state by viewModel.state.collectAsState()
         var currentScreenRoute by rememberSaveable { mutableStateOf(Screen.Configuration.route) }
 
-        BackHandler(enabled = currentScreenRoute != Screen.Configuration.route) {
+        BackPressHandler(enabled = currentScreenRoute != Screen.Configuration.route) {
             when (currentScreenRoute) {
                 Screen.History.route, Screen.Games.route -> {
                     currentScreenRoute = Screen.Configuration.route
@@ -51,7 +50,9 @@ fun App() {
                         },
                         onHistoryClick = { currentScreenRoute = Screen.History.route },
                         onGamesClick = { currentScreenRoute = Screen.Games.route },
-                        formatTime = viewModel::formatTime
+                        formatTime = viewModel::formatTime,
+                        activeGameId = state.activeGameId,
+                        games = state.games
                     )
                 }
                 Screen.ActiveTimer.route -> {
@@ -75,7 +76,15 @@ fun App() {
                 }
                 Screen.Games.route -> {
                     GamesScreen(
-                        onNavigateUp = { currentScreenRoute = Screen.Configuration.route }
+                        state = state,
+                        onNavigateUp = { currentScreenRoute = Screen.Configuration.route },
+                        onCreateNewGame = { name ->
+                            viewModel.createNewGame(name)
+                        },
+                        onSetActiveGame = viewModel::setActiveGame,
+                        onUpdateGameName = viewModel::updateGameName,
+                        onDeleteGame = viewModel::deleteGame,
+                        onGameSelected = { currentScreenRoute = Screen.Configuration.route }
                     )
                 }
             }

@@ -3,12 +3,15 @@ package net.solvetheriddle.roundtimer.platform
 import kotlinx.browser.window
 
 actual class ScreenLocker {
-    private var wakeLock: dynamic = null
+    private var wakeLock: Any? = null
 
     actual fun lock() {
         try {
-            window.navigator.asDynamic().wakeLock.request("screen").then {
-                wakeLock = it
+            val navigator = window.navigator.asDynamic()
+            if (js("typeof navigator.wakeLock !== 'undefined'") as Boolean) {
+                navigator.wakeLock.request("screen").then {
+                    wakeLock = it
+                }
             }
         } catch (e: Exception) {
             println("Screen Wake Lock API not supported or failed: ${e.message}")
@@ -16,7 +19,7 @@ actual class ScreenLocker {
     }
 
     actual fun unlock() {
-        wakeLock?.release()
+        (wakeLock as? dynamic)?.release()
     }
 }
 

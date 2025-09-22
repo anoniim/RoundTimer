@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.TimerState
 import net.solvetheriddle.roundtimer.platform.getStatusBarManager
 import net.solvetheriddle.roundtimer.ui.components.ScrollableDial
@@ -29,7 +30,9 @@ fun ConfigurationScreen(
     onStartTimer: () -> Unit,
     onHistoryClick: () -> Unit,
     onGamesClick: () -> Unit,
-    formatTime: (Int) -> String
+    formatTime: (Int) -> String,
+    activeGameId: String?,
+    games: List<Game>
 ) {
     // Set status bar to dark content for light mode
     LaunchedEffect(Unit) {
@@ -45,9 +48,28 @@ fun ConfigurationScreen(
             Row(
                 modifier = Modifier.fillMaxWidth()
                     .padding(start = 32.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 GamesButton(onGamesClick)
+                val activeGame = games.find { it.id == activeGameId }
+                if (activeGame != null) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        if (activeGame.name.isNotEmpty()) {
+                            Text(
+                                text = activeGame.name,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                        Text(
+                            text = activeGame.date,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
                 HistoryButton(onHistoryClick)
             }
         }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.Round
 
 /**
@@ -26,6 +27,7 @@ class RoundTimerStorage(
     
     companion object {
         private const val ROUNDS_KEY = "rounds_data"
+        private const val GAMES_KEY = "games_data"
         private const val CONFIGURED_TIME_KEY = "configured_time"
         private const val VERSION_KEY = "storage_version"
         private const val CURRENT_VERSION = "1.0"
@@ -87,6 +89,33 @@ class RoundTimerStorage(
         }
         
         // Return empty list if no data available
+        return emptyList()
+    }
+
+    /**
+     * Save games to persistent storage
+     */
+    suspend fun saveGames(games: List<Game>) {
+        try {
+            val jsonString = json.encodeToString(games)
+            platformStorage.saveString(GAMES_KEY, jsonString)
+        } catch (e: Exception) {
+            throw StorageException("Failed to save games", e)
+        }
+    }
+
+    /**
+     * Load games from persistent storage
+     */
+    suspend fun loadGames(): List<Game> {
+        try {
+            val jsonString = platformStorage.loadString(GAMES_KEY)
+            if (jsonString != null) {
+                return json.decodeFromString<List<Game>>(jsonString)
+            }
+        } catch (e: Exception) {
+            // Return empty list if loading fails
+        }
         return emptyList()
     }
     

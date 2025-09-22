@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package net.solvetheriddle.roundtimer.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -9,7 +11,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DayOfWeekNames
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.format.byUnicodePattern
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
 import net.solvetheriddle.roundtimer.model.AudioCue
+import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.Sound
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
@@ -39,10 +51,13 @@ class TimerViewModel : ViewModel() {
                 try {
                     val savedRounds = storage.loadRounds()
                     val configuredTime = storage.loadConfiguredTime() ?: _state.value.configuredTime
+                    val games = storage.loadGames()
                     _state.value = _state.value.copy(
                         rounds = savedRounds,
                         configuredTime = configuredTime,
-                        currentTime = configuredTime
+                        currentTime = configuredTime,
+                        games = games,
+                        activeGameId = games.firstOrNull()?.id
                     )
                 } catch (e: Exception) {
                     // Continue with empty list
@@ -80,18 +95,44 @@ class TimerViewModel : ViewModel() {
         }
     }
 
-        fun startTimer() {
-            screenLocker.lock()
-            val currentState = _state.value
-            _state.value = currentState.copy(
-                isRunning = true,
-                currentTime = currentState.configuredTime,
-                overtimeTime = 0L,
-                isOvertime = false
-            )
-            
-            startCountdown()
+    private fun getCurrentDate(): String {
+        val now = Clock.System.now()
+        val zone = TimeZone.currentSystemDefault()
+        val localDate = now.toLocalDateTime(zone)
+        val dateFormat = LocalDateTime.Format {
+            dayOfWeek(DayOfWeekNames.ENGLISH_FULL)
+            char(' ')
+            day(Padding.NONE)
+            char(' ')
+            monthName(MonthNames.ENGLISH_ABBREVIATED)
+            char(' ')
+            yearTwoDigits(2000)
         }
+        return dateFormat.format(localDate)
+    }
+
+    fun startTimer() {
+        screenLocker.lock()
+        var currentState = _state.value
+        if (currentState.activeGameId == null) {
+            val newGame = Game(id = Clock.System.now().toEpochMilliseconds().toString(), date = getCurrentDate(), name = "")
+            val newGames = currentState.games + newGame
+            currentState = currentState.copy(games = newGames, activeGameId = newGame.id)
+            viewModelScope.launch {
+                storage.saveGames(newGames)
+            }
+        }
+
+        _state.value = currentState.copy(
+            isRunning = true,
+            currentTime = currentState.configuredTime,
+            overtimeTime = 0L,
+            isOvertime = false
+        )
+
+        startCountdown()
+    }
+
     private fun startCountdown() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
@@ -159,7 +200,8 @@ class TimerViewModel : ViewModel() {
                 id = currentTime.toString(),
                 duration = durationSeconds,
                 overtime = currentState.overtimeSeconds,
-                timestamp = currentTime
+                timestamp = currentTime,
+                gameId = currentState.activeGameId!!
             )
 
             val newRounds = currentState.rounds + round
@@ -217,6 +259,47 @@ class TimerViewModel : ViewModel() {
             "$minutes:${remainingSeconds.toString().padStart(2, '0')}"
         } else {
             "0:${remainingSeconds.toString().padStart(2, '0')}"
+        }
+    }
+
+    fun createNewGame(name: String = "") {
+        val newGame = Game(id = Clock.System.now().toEpochMilliseconds().toString(), date = getCurrentDate(), name = name)
+        val newGames = _state.value.games + newGame
+        _state.value = _state.value.copy(games = newGames, activeGameId = newGame.id)
+        viewModelScope.launch {
+            storage.saveGames(newGames)
+        }
+    }
+
+    fun setActiveGame(gameId: String) {
+        _state.value = _state.value.copy(activeGameId = gameId)
+    }
+
+    fun updateGameName(gameId: String, name: String) {
+        val updatedGames = _state.value.games.map {
+            if (it.id == gameId) {
+                it.copy(name = name)
+            } else {
+                it
+            }
+        }
+        _state.value = _state.value.copy(games = updatedGames)
+        viewModelScope.launch {
+            storage.saveGames(updatedGames)
+        }
+    }
+
+    fun deleteGame(gameId: String) {
+        val currentState = _state.value
+        val newGames = currentState.games.filter { it.id != gameId }
+        val newActiveGameId = if (currentState.activeGameId == gameId) {
+            newGames.firstOrNull()?.id
+        } else {
+            currentState.activeGameId
+        }
+        _state.value = currentState.copy(games = newGames, activeGameId = newActiveGameId)
+        viewModelScope.launch {
+            storage.saveGames(newGames)
         }
     }
 
