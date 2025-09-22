@@ -55,17 +55,15 @@ fun ConfigurationScreen(
                     )
                 )
                 .padding(paddingValues)
-                .padding(24.dp)
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize()
-                    .padding(bottom = 88.dp),
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
+                val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 0.9f
                 // Centered StyledCard with scrollable dial
                 StyledCard(
-                    modifier = Modifier,
-                    size = 380.dp,
+                    modifier = Modifier.size(cardSize),
                     verticalArrangement = Arrangement.Top
                 ) {
                     // Scrollable dial for time selection
