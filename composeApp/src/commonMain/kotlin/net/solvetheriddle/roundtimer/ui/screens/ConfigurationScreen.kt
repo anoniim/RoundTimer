@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +28,7 @@ fun ConfigurationScreen(
     onTimeChanged: (Int) -> Unit,
     onStartTimer: () -> Unit,
     onHistoryClick: () -> Unit,
+    onGamesClick: () -> Unit,
     formatTime: (Int) -> String
 ) {
     // Set status bar to dark content for light mode
@@ -40,7 +42,14 @@ fun ConfigurationScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         floatingActionButton = {
-            HistoryButton(onHistoryClick)
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(start = 32.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                GamesButton(onGamesClick)
+                HistoryButton(onHistoryClick)
+            }
         }
     ) { paddingValues ->
         Column(
@@ -100,6 +109,21 @@ fun ConfigurationScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GamesButton(onGamesClick: () -> Unit) {
+    FloatingActionButton(
+        modifier = Modifier.size(68.dp),
+        onClick = onGamesClick,
+        containerColor = MaterialTheme.colorScheme.secondary,
+        contentColor = MaterialTheme.colorScheme.onSecondary
+    ) {
+        Icon(
+            imageVector = Icons.Filled.List,
+            contentDescription = "Games"
+        )
     }
 }
 

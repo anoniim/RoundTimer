@@ -1,5 +1,6 @@
 package net.solvetheriddle.roundtimer
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -13,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import net.solvetheriddle.roundtimer.ui.screens.ActiveTimerScreen
 import net.solvetheriddle.roundtimer.ui.screens.ConfigurationScreen
+import net.solvetheriddle.roundtimer.ui.screens.GamesScreen
 import net.solvetheriddle.roundtimer.ui.screens.HistoryScreen
 import net.solvetheriddle.roundtimer.viewmodel.TimerViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -25,6 +27,18 @@ fun App() {
         val state by viewModel.state.collectAsState()
         var currentScreenRoute by rememberSaveable { mutableStateOf(Screen.Configuration.route) }
 
+        BackHandler(enabled = currentScreenRoute != Screen.Configuration.route) {
+            when (currentScreenRoute) {
+                Screen.History.route, Screen.Games.route -> {
+                    currentScreenRoute = Screen.Configuration.route
+                }
+                Screen.ActiveTimer.route -> {
+                    viewModel.stopTimer()
+                    currentScreenRoute = Screen.Configuration.route
+                }
+            }
+        }
+
         Crossfade(targetState = currentScreenRoute) { route ->
             when (route) {
                 Screen.Configuration.route -> {
@@ -36,6 +50,7 @@ fun App() {
                             currentScreenRoute = Screen.ActiveTimer.route
                         },
                         onHistoryClick = { currentScreenRoute = Screen.History.route },
+                        onGamesClick = { currentScreenRoute = Screen.Games.route },
                         formatTime = viewModel::formatTime
                     )
                 }
@@ -58,6 +73,11 @@ fun App() {
                         formatTime = viewModel::formatTime
                     )
                 }
+                Screen.Games.route -> {
+                    GamesScreen(
+                        onNavigateUp = { currentScreenRoute = Screen.Configuration.route }
+                    )
+                }
             }
         }
 
@@ -76,4 +96,5 @@ sealed class Screen(val route: String) {
     data object Configuration : Screen("configuration")
     data object ActiveTimer : Screen("active_timer")
     data object History : Screen("history")
+    data object Games : Screen("games")
 }
