@@ -63,17 +63,18 @@ fun ConfigurationScreen(
             ) {
                 // Centered StyledCard with scrollable dial
                 StyledCard(
-                    modifier = Modifier
+                    modifier = Modifier,
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     // Scrollable dial for time selection
                     ScrollableDial(
                         currentSeconds = state.configuredSeconds,
                         onValueChange = onTimeChanged,
                         formatTime = formatTime,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
                     )
-
-                    Spacer(modifier = Modifier.height(32.dp))
 
                     // Start button
                     Button(

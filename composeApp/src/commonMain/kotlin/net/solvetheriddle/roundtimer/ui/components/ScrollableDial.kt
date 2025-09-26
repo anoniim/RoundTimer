@@ -116,15 +116,14 @@ fun ScrollableDial(
     }
     
     Box(
-        modifier = modifier.fillMaxWidth().height(220.dp),
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         // Main scrollable list
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
+                .fillMaxSize()
                 .graphicsLayer {
                     compositingStrategy = CompositingStrategy.Offscreen
                 }

@@ -22,12 +22,14 @@ import androidx.compose.ui.unit.dp
  * 
  * @param modifier Optional modifier to apply to the outer container
  * @param animatedSize Optional animated size for dynamic sizing (defaults to 350dp)
+ * @param verticalArrangement Vertical arrangement for the content (defaults to Center)
  * @param content The content to display inside the card
  */
 @Composable
 fun StyledCard(
     modifier: Modifier = Modifier,
     animatedSize: androidx.compose.ui.unit.Dp = 350.dp,
+    verticalArrangement: Arrangement.Vertical = Arrangement.Center,
     content: @Composable ColumnScope.() -> Unit
 ) {
     // Card container with padding to prevent shadow clipping
@@ -51,7 +53,7 @@ fun StyledCard(
                     .fillMaxSize()
                     .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = verticalArrangement,
                 content = content
             )
         }
