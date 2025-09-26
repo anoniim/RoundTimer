@@ -87,8 +87,8 @@ fun ScrollableDial(
             val visibleItems = listState.layoutInfo.visibleItemsInfo
             if (visibleItems.isEmpty()) return@snapshotFlow 0
             
-            // Target offset at vertical center (50%)
-            val targetOffset = listState.layoutInfo.viewportSize.height / 2
+            // Target offset at 40% from top (closer to center)
+            val targetOffset = (listState.layoutInfo.viewportSize.height * 0.4f).toInt()
             
             // Find closest item to target position
             var closestItemIndex = 0
@@ -153,9 +153,10 @@ fun ScrollableDial(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
             flingBehavior = flingBehavior,
-            // Padding for center selection point
-            // Equal padding top and bottom for center alignment
-            contentPadding = PaddingValues(top = 80.dp, bottom = 80.dp)
+            // Padding adjusted for center selection point
+            // Top padding allows scrolling to first item
+            // Bottom padding prevents scrolling past last item
+            contentPadding = PaddingValues(top = 0.dp, bottom = 120.dp)
         ) {
             // Add empty spacer item at the beginning to allow first value to scroll down
             item {
@@ -187,10 +188,10 @@ private fun LazyItemScope.DialItem(
     primaryColor: Color,
     secondaryColor: Color
 ) {
-    // Calculate item's position relative to the selection point (center)
+    // Calculate item's position relative to the selection point (40% from top)
     val layoutInfo = listState.layoutInfo
     val viewportHeight = layoutInfo.viewportSize.height
-    val targetOffset = viewportHeight / 2
+    val targetOffset = (viewportHeight * 0.4f).toInt()
     
     // Find this item in the visible items
     val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
@@ -199,8 +200,8 @@ private fun LazyItemScope.DialItem(
     val distanceFromCenter = itemInfo?.let { info ->
         val itemCenter = info.offset + (info.size / 2)
         val distance = abs(itemCenter - targetOffset).toFloat()
-        // Normalize to 0-1 range where 0 is at center
-        (distance / (viewportHeight * 0.5f)).coerceIn(0f, 1f)
+        // Normalize to 0-1 range where 0 is at target position
+        (distance / (viewportHeight * 0.4f)).coerceIn(0f, 1f)
     } ?: 1f
     
     // Interpolate values based on distance from center
