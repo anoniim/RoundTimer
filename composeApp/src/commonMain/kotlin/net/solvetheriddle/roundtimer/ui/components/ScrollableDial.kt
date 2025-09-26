@@ -123,9 +123,9 @@ fun ScrollableDial(
             modifier = Modifier
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
             flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(top = 40.dp, bottom = 140.dp) // Position selected item higher
+            contentPadding = PaddingValues(top = 20.dp, bottom = 160.dp) // Position selected item much higher
         ) {
             items(values.size) { index ->
                 val value = values[index]
@@ -178,7 +178,7 @@ fun ScrollableDial(
                     modifier = Modifier
                         .alpha(alpha)
                         .fillMaxWidth()
-                        .padding(vertical = if (absDistance == 0) 8.dp else 4.dp)
+                        .padding(vertical = if (absDistance == 0) 4.dp else 2.dp)
                 )
             }
         }
