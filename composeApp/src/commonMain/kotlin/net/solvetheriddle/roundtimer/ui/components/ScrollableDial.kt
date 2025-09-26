@@ -171,7 +171,7 @@ fun ScrollableDial(
         ) {
             // Add empty spacer item at the beginning to allow first value to scroll down
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(80.dp))
             }
             
             items(values.size) { index ->
@@ -179,7 +179,7 @@ fun ScrollableDial(
                 
                 DialItem(
                     value = value,
-                    index = index,
+                    index = index + 1,  // Add 1 because of spacer item
                     listState = listState,
                     formatTime = formatTime,
                     primaryColor = MaterialTheme.colorScheme.primary,
