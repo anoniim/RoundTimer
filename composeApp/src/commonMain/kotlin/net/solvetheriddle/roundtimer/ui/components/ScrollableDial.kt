@@ -125,7 +125,7 @@ fun ScrollableDial(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
             flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(vertical = 90.dp) // Center the selected item
+            contentPadding = PaddingValues(top = 40.dp, bottom = 140.dp) // Position selected item higher
         ) {
             items(values.size) { index ->
                 val value = values[index]
