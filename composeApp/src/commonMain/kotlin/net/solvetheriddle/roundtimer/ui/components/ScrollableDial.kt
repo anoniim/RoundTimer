@@ -86,10 +86,22 @@ fun ScrollableDial(
         snapshotFlow { 
             // Target position is in upper portion of viewport (around 30% from top)
             val targetOffset = (listState.layoutInfo.viewportSize.height * 0.3f).toInt()
+            
+            // Special handling for edge cases
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty()) return@snapshotFlow 0
+            
+            // Check if we're at the very top
+            val firstVisibleItem = visibleItems.first()
+            if (firstVisibleItem.index == 0 && firstVisibleItem.offset >= -10) {
+                return@snapshotFlow 0 // Select first item when at top
+            }
+            
+            // Find closest item to target position
             var closestItemIndex = 0
             var closestDistance = Int.MAX_VALUE
             
-            listState.layoutInfo.visibleItemsInfo.forEach { item ->
+            visibleItems.forEach { item ->
                 val itemCenter = item.offset + (item.size / 2)
                 val distance = abs(itemCenter - targetOffset)
                 if (distance < closestDistance) {
