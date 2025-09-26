@@ -4,6 +4,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -11,8 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -129,58 +135,71 @@ fun ScrollableDial(
         ) {
             items(values.size) { index ->
                 val value = values[index]
-                val isCurrent = value == nearestValidValue
                 
-                // Calculate distance from center for fading effect
-                val centerIndex = currentIndex
-                val distance = index - centerIndex  // Signed distance
-                val absDistance = abs(distance)
-                
-                // Determine visual properties based on position
-                // distance < 0 means this value is smaller (appears above)
-                // distance > 0 means this value is larger (appears below)
-                val fontSize = when (absDistance) {
-                    0 -> 72.sp  // Current value - large
-                    1 -> 36.sp  // Adjacent values - smaller
-                    else -> 20.sp // Other values - very small
-                }
-                
-                val fontWeight = when (absDistance) {
-                    0 -> FontWeight.Bold
-                    else -> FontWeight.Normal
-                }
-                
-                // Show current value fully, adjacent values faded, others invisible
-                val alpha = when {
-                    absDistance == 0 -> 1f  // Current value
-                    absDistance == 1 -> {   // Adjacent values
-                        // Check edge cases
-                        when {
-                            index == 0 && distance == -1 -> 0f  // Don't show value before minimum
-                            index == values.size - 1 && distance == 1 -> 0f  // Don't show value after maximum
-                            else -> 0.4f
-                        }
-                    }
-                    else -> 0f  // Hide other values
-                }
-                
-                // Always render text items to maintain scrolling consistency
-                Text(
-                    text = formatTime(value),
-                    fontSize = fontSize,
-                    fontWeight = fontWeight,
-                    color = if (isCurrent) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .alpha(alpha)
-                        .fillMaxWidth()
-                        .padding(vertical = if (absDistance == 0) 4.dp else 2.dp)
+                DialItem(
+                    value = value,
+                    index = index,
+                    listState = listState,
+                    formatTime = formatTime,
+                    primaryColor = MaterialTheme.colorScheme.primary,
+                    secondaryColor = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun LazyItemScope.DialItem(
+    value: Int,
+    index: Int,
+    listState: LazyListState,
+    formatTime: (Int) -> String,
+    primaryColor: Color,
+    secondaryColor: Color
+) {
+    // Calculate item's position relative to the viewport center
+    val layoutInfo = listState.layoutInfo
+    val viewportHeight = layoutInfo.viewportSize.height
+    val centerOffset = viewportHeight / 2
+    
+    // Find this item in the visible items
+    val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
+    
+    // Calculate how close this item is to the center (0 = center, 1 = edge)
+    val distanceFromCenter = itemInfo?.let { info ->
+        val itemCenter = info.offset + (info.size / 2)
+        val distance = abs(itemCenter - centerOffset).toFloat()
+        // Normalize to 0-1 range where 0 is center
+        (distance / centerOffset.toFloat()).coerceIn(0f, 1f)
+    } ?: 1f
+    
+    // Interpolate values based on distance from center
+    val scale = 1f - (distanceFromCenter * 0.5f) // Scale from 1.0 to 0.5
+    val fontSize = (72f - (44f * distanceFromCenter)).sp // Interpolate from 72sp to 28sp
+    val alpha = 1f - (distanceFromCenter * 0.6f) // Alpha from 1.0 to 0.4
+    
+    // Interpolate color based on distance
+    val textColor = lerp(primaryColor, secondaryColor, distanceFromCenter)
+    
+    // Font weight transitions
+    val fontWeight = if (distanceFromCenter < 0.3f) FontWeight.Bold else FontWeight.Normal
+    
+    // Only show items that are reasonably close to center
+    if (distanceFromCenter <= 1f) {
+        Text(
+            text = formatTime(value),
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            color = textColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .alpha(alpha)
+                .fillMaxWidth()
+                .padding(vertical = 2.dp)
+        )
+    } else {
+        // Spacer for items too far from center
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
