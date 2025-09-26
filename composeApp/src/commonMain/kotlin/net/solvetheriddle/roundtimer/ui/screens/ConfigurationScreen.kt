@@ -81,23 +81,23 @@ fun ConfigurationScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Start button
-//                    Button(
-//                        onClick = onStartTimer,
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .height(48.dp),
-//                        shape = RoundedCornerShape(12.dp),
-//                        colors = ButtonDefaults.buttonColors(
-//                            containerColor = MaterialTheme.colorScheme.primary
-//                        ),
-//                    ) {
-//                        Text(
-//                            text = "START",
-//                            fontSize = 18.sp,
-//                            fontWeight = FontWeight.SemiBold,
-//                            color = MaterialTheme.colorScheme.onPrimary
-//                        )
-//                    }
+                    Button(
+                        onClick = onStartTimer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                    ) {
+                        Text(
+                            text = "START",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             }
         }
