@@ -62,7 +62,8 @@ fun ScrollableDial(
     
     // Ensure current value is valid and in range
     val validCurrentSeconds = currentSeconds.coerceIn(minValue, maxValue)
-    val nearestValidValue = values.minByOrNull { abs(it - validCurrentSeconds) } ?: values.first()
+    // Round DOWN to nearest step to avoid jumping to next value
+    val nearestValidValue = values.lastOrNull { it <= validCurrentSeconds } ?: values.first()
     
     // Calculate current index based on current value
     val currentIndex = remember(nearestValidValue, values) {
