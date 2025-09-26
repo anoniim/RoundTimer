@@ -69,9 +69,9 @@ fun ScrollableDial(
         values.indexOf(nearestValidValue).coerceAtLeast(0)
     }
     
-    // LazyListState to control scrolling - center the current item
+    // LazyListState to control scrolling - center the current item (add 1 for spacer)
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = currentIndex,
+        initialFirstVisibleItemIndex = currentIndex + 1,
         initialFirstVisibleItemScrollOffset = 0
     )
     
@@ -106,11 +106,14 @@ fun ScrollableDial(
             var closestDistance = Int.MAX_VALUE
             
             visibleItems.forEach { item ->
-                val itemCenter = item.offset + (item.size / 2)
-                val distance = abs(itemCenter - targetOffset)
-                if (distance < closestDistance) {
-                    closestDistance = distance
-                    closestItemIndex = item.index
+                // Skip the spacer item (index 0)
+                if (item.index > 0) {
+                    val itemCenter = item.offset + (item.size / 2)
+                    val distance = abs(itemCenter - targetOffset)
+                    if (distance < closestDistance) {
+                        closestDistance = distance
+                        closestItemIndex = item.index - 1  // Adjust for spacer
+                    }
                 }
             }
             closestItemIndex
@@ -130,10 +133,10 @@ fun ScrollableDial(
     LaunchedEffect(nearestValidValue) {
         if (!isScrolling) {
             val targetIndex = values.indexOf(nearestValidValue)
-            if (targetIndex >= 0 && abs(listState.firstVisibleItemIndex - targetIndex) > 2) {
+            if (targetIndex >= 0 && abs(listState.firstVisibleItemIndex - (targetIndex + 1)) > 2) {
                 coroutineScope.launch {
                     listState.animateScrollToItem(
-                        index = targetIndex,
+                        index = targetIndex + 1,  // Add 1 for spacer
                         scrollOffset = 0
                     )
                 }
@@ -166,6 +169,11 @@ fun ScrollableDial(
             // Bottom padding = 120dp works perfectly for max value (10:00)
             contentPadding = PaddingValues(top = 0.dp, bottom = 120.dp)
         ) {
+            // Add empty spacer item at the beginning to allow first value to scroll down
+            item {
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+            
             items(values.size) { index ->
                 val value = values[index]
                 
