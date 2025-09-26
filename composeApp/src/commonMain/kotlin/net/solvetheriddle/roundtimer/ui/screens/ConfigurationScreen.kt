@@ -64,7 +64,7 @@ fun ConfigurationScreen(
                 // Centered StyledCard with scrollable dial
                 StyledCard(
                     modifier = Modifier,
-                    verticalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.Top
                 ) {
                     // Scrollable dial for time selection
                     ScrollableDial(
@@ -76,6 +76,8 @@ fun ConfigurationScreen(
                             .weight(1f)
                             .heightIn(min = 200.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     // Start button
                     Button(
