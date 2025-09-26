@@ -162,9 +162,9 @@ fun ScrollableDial(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             flingBehavior = flingBehavior,
             // Dynamic padding based on selection position
-            // Top padding = reduced to allow reaching first item (0:30)
+            // Top padding = zero to allow first item to reach selection point
             // Bottom padding = 120dp works perfectly for max value (10:00)
-            contentPadding = PaddingValues(top = 40.dp, bottom = 120.dp)
+            contentPadding = PaddingValues(top = 0.dp, bottom = 120.dp)
         ) {
             items(values.size) { index ->
                 val value = values[index]
