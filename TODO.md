@@ -1,0 +1,3 @@
+- Move history out of TimerState
+- History sheet must scroll (e.g. in desktop/landscape)
+- Desktop: Elevation shadow clipped
