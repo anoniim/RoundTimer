@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -82,6 +83,9 @@ fun ScrollableDial(
     // Snap behavior for smooth scrolling to items
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
     
+    // Track if we're still initializing to prevent value changes during initial positioning
+    var isInitializing by remember { mutableStateOf(true) }
+    
     // Track the centered item based on scroll position
     LaunchedEffect(listState) {
         snapshotFlow { 
@@ -108,8 +112,8 @@ fun ScrollableDial(
             }
             closestItemIndex
         }.collect { closestItemIndex ->
-            // Update value if changed and valid
-            if (closestItemIndex in values.indices) {
+            // Update value if changed and valid (but not during initialization)
+            if (!isInitializing && closestItemIndex in values.indices) {
                 val newValue = values[closestItemIndex]
                 if (newValue != currentSeconds) {
                     onValueChange(newValue)
@@ -137,6 +141,13 @@ fun ScrollableDial(
     // Track scrolling state
     LaunchedEffect(listState.isScrollInProgress) {
         isScrolling = listState.isScrollInProgress
+    }
+    
+    // Delay to let initial scroll settle
+    LaunchedEffect(Unit) {
+        // Wait a bit for initial scroll to settle
+        delay(100)
+        isInitializing = false
     }
     
     Box(
