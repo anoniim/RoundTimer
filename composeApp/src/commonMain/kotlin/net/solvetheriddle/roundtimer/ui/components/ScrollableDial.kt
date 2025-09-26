@@ -71,7 +71,7 @@ fun ScrollableDial(
     
     // LazyListState to control scrolling - center the current item
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = (currentIndex - 1).coerceAtLeast(0),
+        initialFirstVisibleItemIndex = currentIndex,
         initialFirstVisibleItemScrollOffset = 0
     )
     
@@ -115,10 +115,8 @@ fun ScrollableDial(
             val targetIndex = values.indexOf(nearestValidValue)
             if (targetIndex >= 0 && abs(listState.firstVisibleItemIndex - targetIndex) > 2) {
                 coroutineScope.launch {
-                    // Scroll so the target is centered (with one item above if possible)
-                    val scrollToIndex = (targetIndex - 1).coerceAtLeast(0)
                     listState.animateScrollToItem(
-                        index = scrollToIndex,
+                        index = targetIndex,
                         scrollOffset = 0
                     )
                 }
@@ -143,7 +141,8 @@ fun ScrollableDial(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
             flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(top = 20.dp, bottom = 160.dp) // Position selected item much higher
+            // Content padding that allows scrolling to first and last items
+            contentPadding = PaddingValues(top = 60.dp, bottom = 200.dp)
         ) {
             items(values.size) { index ->
                 val value = values[index]
