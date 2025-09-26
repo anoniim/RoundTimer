@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -80,43 +82,53 @@ fun ScrollableDial(
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
     
     // Track the centered item based on scroll position
-    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
-        // Calculate which item is most centered
-        val centerOffset = listState.layoutInfo.viewportSize.height / 2
-        var closestItemIndex = 0
-        var closestDistance = Int.MAX_VALUE
-        
-        listState.layoutInfo.visibleItemsInfo.forEach { item ->
-            val itemCenter = item.offset + (item.size / 2)
-            val distance = abs(itemCenter - centerOffset)
-            if (distance < closestDistance) {
-                closestDistance = distance
-                closestItemIndex = item.index
+    LaunchedEffect(listState) {
+        snapshotFlow { 
+            val centerOffset = listState.layoutInfo.viewportSize.height / 2
+            var closestItemIndex = 0
+            var closestDistance = Int.MAX_VALUE
+            
+            listState.layoutInfo.visibleItemsInfo.forEach { item ->
+                val itemCenter = item.offset + (item.size / 2)
+                val distance = abs(itemCenter - centerOffset)
+                if (distance < closestDistance) {
+                    closestDistance = distance
+                    closestItemIndex = item.index
+                }
             }
-        }
-        
-        // Update value if changed
-        if (closestItemIndex in values.indices) {
-            val newValue = values[closestItemIndex]
-            if (newValue != nearestValidValue) {
-                onValueChange(newValue)
+            closestItemIndex
+        }.collect { closestItemIndex ->
+            // Update value if changed and valid
+            if (closestItemIndex in values.indices) {
+                val newValue = values[closestItemIndex]
+                if (newValue != currentSeconds) {
+                    onValueChange(newValue)
+                }
             }
         }
     }
     
-    // Scroll to value when it changes externally
+    // Scroll to value when it changes externally (but not from our own updates)
+    var isScrolling by remember { mutableStateOf(false) }
     LaunchedEffect(nearestValidValue) {
-        val targetIndex = values.indexOf(nearestValidValue)
-        if (targetIndex >= 0) {
-            coroutineScope.launch {
-                // Scroll so the target is centered (with one item above if possible)
-                val scrollToIndex = (targetIndex - 1).coerceAtLeast(0)
-                listState.animateScrollToItem(
-                    index = scrollToIndex,
-                    scrollOffset = 0
-                )
+        if (!isScrolling) {
+            val targetIndex = values.indexOf(nearestValidValue)
+            if (targetIndex >= 0 && abs(listState.firstVisibleItemIndex - targetIndex) > 2) {
+                coroutineScope.launch {
+                    // Scroll so the target is centered (with one item above if possible)
+                    val scrollToIndex = (targetIndex - 1).coerceAtLeast(0)
+                    listState.animateScrollToItem(
+                        index = scrollToIndex,
+                        scrollOffset = 0
+                    )
+                }
             }
         }
+    }
+    
+    // Track scrolling state
+    LaunchedEffect(listState.isScrollInProgress) {
+        isScrolling = listState.isScrollInProgress
     }
     
     Box(
