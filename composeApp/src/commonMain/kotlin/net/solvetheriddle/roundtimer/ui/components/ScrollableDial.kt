@@ -87,19 +87,8 @@ fun ScrollableDial(
             val visibleItems = listState.layoutInfo.visibleItemsInfo
             if (visibleItems.isEmpty()) return@snapshotFlow 0
             
-            // Dynamic target offset based on position in list
-            val firstVisibleIndex = visibleItems.first().index
-            val targetOffset = when {
-                firstVisibleIndex == 0 -> {
-                    // When at the beginning, use the first visible item's position
-                    val firstItem = visibleItems.find { it.index == 0 }
-                    firstItem?.let { it.offset + it.size / 2 } ?: (listState.layoutInfo.viewportSize.height * 0.3f).toInt()
-                }
-                else -> {
-                    // Normal target at 30% from top
-                    (listState.layoutInfo.viewportSize.height * 0.3f).toInt()
-                }
-            }
+            // Target offset at vertical center (50%)
+            val targetOffset = listState.layoutInfo.viewportSize.height / 2
             
             // Find closest item to target position
             var closestItemIndex = 0
@@ -164,14 +153,13 @@ fun ScrollableDial(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
             flingBehavior = flingBehavior,
-            // Dynamic padding based on selection position
-            // Top padding = zero to allow first item to reach selection point
-            // Bottom padding = 120dp works perfectly for max value (10:00)
-            contentPadding = PaddingValues(top = 0.dp, bottom = 120.dp)
+            // Padding for center selection point
+            // Equal padding top and bottom for center alignment
+            contentPadding = PaddingValues(top = 80.dp, bottom = 80.dp)
         ) {
             // Add empty spacer item at the beginning to allow first value to scroll down
             item {
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(50.dp))
             }
             
             items(values.size) { index ->
@@ -199,10 +187,10 @@ private fun LazyItemScope.DialItem(
     primaryColor: Color,
     secondaryColor: Color
 ) {
-    // Calculate item's position relative to the selection point (upper portion)
+    // Calculate item's position relative to the selection point (center)
     val layoutInfo = listState.layoutInfo
     val viewportHeight = layoutInfo.viewportSize.height
-    val targetOffset = (viewportHeight * 0.3f).toInt()
+    val targetOffset = viewportHeight / 2
     
     // Find this item in the visible items
     val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
@@ -211,8 +199,8 @@ private fun LazyItemScope.DialItem(
     val distanceFromCenter = itemInfo?.let { info ->
         val itemCenter = info.offset + (info.size / 2)
         val distance = abs(itemCenter - targetOffset).toFloat()
-        // Normalize to 0-1 range where 0 is at target position
-        (distance / (viewportHeight * 0.4f)).coerceIn(0f, 1f)
+        // Normalize to 0-1 range where 0 is at center
+        (distance / (viewportHeight * 0.5f)).coerceIn(0f, 1f)
     } ?: 1f
     
     // Interpolate values based on distance from center
