@@ -84,17 +84,21 @@ fun ScrollableDial(
     // Track the centered item based on scroll position
     LaunchedEffect(listState) {
         snapshotFlow { 
-            // Target position is in upper portion of viewport (around 30% from top)
-            val targetOffset = (listState.layoutInfo.viewportSize.height * 0.3f).toInt()
-            
-            // Special handling for edge cases
             val visibleItems = listState.layoutInfo.visibleItemsInfo
             if (visibleItems.isEmpty()) return@snapshotFlow 0
             
-            // Check if we're at the very top
-            val firstVisibleItem = visibleItems.first()
-            if (firstVisibleItem.index == 0 && firstVisibleItem.offset >= -10) {
-                return@snapshotFlow 0 // Select first item when at top
+            // Dynamic target offset based on position in list
+            val firstVisibleIndex = visibleItems.first().index
+            val targetOffset = when {
+                firstVisibleIndex == 0 -> {
+                    // When at the beginning, use the first visible item's position
+                    val firstItem = visibleItems.find { it.index == 0 }
+                    firstItem?.let { it.offset + it.size / 2 } ?: (listState.layoutInfo.viewportSize.height * 0.3f).toInt()
+                }
+                else -> {
+                    // Normal target at 30% from top
+                    (listState.layoutInfo.viewportSize.height * 0.3f).toInt()
+                }
             }
             
             // Find closest item to target position
