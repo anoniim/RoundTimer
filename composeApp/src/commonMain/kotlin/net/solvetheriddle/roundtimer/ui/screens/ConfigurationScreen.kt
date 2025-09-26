@@ -64,6 +64,7 @@ fun ConfigurationScreen(
                 // Centered StyledCard with scrollable dial
                 StyledCard(
                     modifier = Modifier,
+                    animatedSize = 450.dp,
                     verticalArrangement = Arrangement.Top
                 ) {
                     // Scrollable dial for time selection
