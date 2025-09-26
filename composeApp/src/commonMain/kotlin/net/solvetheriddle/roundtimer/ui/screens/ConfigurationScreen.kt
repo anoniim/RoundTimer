@@ -74,6 +74,7 @@ fun ConfigurationScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
+                            .heightIn(min = 200.dp)
                     )
 
                     // Start button

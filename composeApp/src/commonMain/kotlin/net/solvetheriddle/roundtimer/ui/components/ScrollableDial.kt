@@ -43,18 +43,22 @@ fun ScrollableDial(
 ) {
     // Calculate the list of all possible values
     val values = remember(minValue, maxValue, step) {
-        val list = mutableListOf<Int>()
-        var current = minValue
-        while (current <= maxValue) {
-            list.add(current)
-            current += step
+        buildList {
+            var current = minValue
+            while (current <= maxValue) {
+                add(current)
+                current += step
+            }
         }
-        list
     }
     
+    // Ensure current value is valid and in range
+    val validCurrentSeconds = currentSeconds.coerceIn(minValue, maxValue)
+    val nearestValidValue = values.minByOrNull { abs(it - validCurrentSeconds) } ?: values.first()
+    
     // Calculate current index based on current value
-    val currentIndex = remember(currentSeconds, values) {
-        values.indexOf(currentSeconds).takeIf { it >= 0 } ?: 0
+    val currentIndex = remember(nearestValidValue, values) {
+        values.indexOf(nearestValidValue).coerceAtLeast(0)
     }
     
     // LazyListState to control scrolling - start with current item in view
@@ -87,15 +91,15 @@ fun ScrollableDial(
         // Update value if changed
         if (closestItemIndex in values.indices) {
             val newValue = values[closestItemIndex]
-            if (newValue != currentSeconds) {
+            if (newValue != nearestValidValue) {
                 onValueChange(newValue)
             }
         }
     }
     
     // Scroll to value when it changes externally
-    LaunchedEffect(currentSeconds) {
-        val targetIndex = values.indexOf(currentSeconds)
+    LaunchedEffect(nearestValidValue) {
+        val targetIndex = values.indexOf(nearestValidValue)
         if (targetIndex >= 0) {
             coroutineScope.launch {
                 listState.animateScrollToItem(
@@ -122,7 +126,7 @@ fun ScrollableDial(
         ) {
             items(values.size) { index ->
                 val value = values[index]
-                val isCurrent = value == currentSeconds
+                val isCurrent = value == nearestValidValue
                 
                 // Calculate distance from center for fading effect
                 val centerIndex = currentIndex
