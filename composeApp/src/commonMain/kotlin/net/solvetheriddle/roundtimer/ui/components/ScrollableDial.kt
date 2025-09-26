@@ -61,9 +61,10 @@ fun ScrollableDial(
         values.indexOf(nearestValidValue).coerceAtLeast(0)
     }
     
-    // LazyListState to control scrolling - start with current item in view
+    // LazyListState to control scrolling - center the current item
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = currentIndex.coerceAtLeast(0)
+        initialFirstVisibleItemIndex = (currentIndex - 1).coerceAtLeast(0),
+        initialFirstVisibleItemScrollOffset = 0
     )
     
     // Coroutine scope for scrolling animations
@@ -102,8 +103,10 @@ fun ScrollableDial(
         val targetIndex = values.indexOf(nearestValidValue)
         if (targetIndex >= 0) {
             coroutineScope.launch {
+                // Scroll so the target is centered (with one item above if possible)
+                val scrollToIndex = (targetIndex - 1).coerceAtLeast(0)
                 listState.animateScrollToItem(
-                    index = targetIndex,
+                    index = scrollToIndex,
                     scrollOffset = 0
                 )
             }
@@ -120,9 +123,9 @@ fun ScrollableDial(
             modifier = Modifier
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(vertical = 100.dp) // Center the selected item
+            contentPadding = PaddingValues(vertical = 90.dp) // Center the selected item
         ) {
             items(values.size) { index ->
                 val value = values[index]
@@ -130,25 +133,35 @@ fun ScrollableDial(
                 
                 // Calculate distance from center for fading effect
                 val centerIndex = currentIndex
-                val distance = abs(index - centerIndex)
+                val distance = index - centerIndex  // Signed distance
+                val absDistance = abs(distance)
                 
-                // Determine what to show based on distance
-                val fontSize = when (distance) {
+                // Determine visual properties based on position
+                // distance < 0 means this value is smaller (appears above)
+                // distance > 0 means this value is larger (appears below)
+                val fontSize = when (absDistance) {
                     0 -> 72.sp  // Current value - large
                     1 -> 36.sp  // Adjacent values - smaller
                     else -> 20.sp // Other values - very small
                 }
                 
-                val fontWeight = when (distance) {
+                val fontWeight = when (absDistance) {
                     0 -> FontWeight.Bold
                     else -> FontWeight.Normal
                 }
                 
-                val alpha = when (distance) {
-                    0 -> 1f
-                    1 -> 0.4f  
-                    2 -> 0.15f
-                    else -> 0f
+                // Show current value fully, adjacent values faded, others invisible
+                val alpha = when {
+                    absDistance == 0 -> 1f  // Current value
+                    absDistance == 1 -> {   // Adjacent values
+                        // Check edge cases
+                        when {
+                            index == 0 && distance == -1 -> 0f  // Don't show value before minimum
+                            index == values.size - 1 && distance == 1 -> 0f  // Don't show value after maximum
+                            else -> 0.4f
+                        }
+                    }
+                    else -> 0f  // Hide other values
                 }
                 
                 // Always render text items to maintain scrolling consistency
@@ -165,7 +178,7 @@ fun ScrollableDial(
                     modifier = Modifier
                         .alpha(alpha)
                         .fillMaxWidth()
-                        .padding(vertical = if (distance == 0) 8.dp else 4.dp)
+                        .padding(vertical = if (absDistance == 0) 8.dp else 4.dp)
                 )
             }
         }
