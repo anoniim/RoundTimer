@@ -4,12 +4,20 @@ import net.solvetheriddle.roundtimer.model.Sound
 import org.w3c.dom.Audio
 
 actual class SoundPlayer {
+    private var audio: Audio? = null
+
     actual fun playSound(sound: Sound) {
         try {
-            Audio("files/${sound.fileName}").play()
+            audio?.pause()
+            audio = Audio("files/${sound.fileName}")
+            audio?.play()
         } catch (e: Exception) {
             println("Error playing sound: ${e.message}")
         }
+    }
+
+    actual fun stopSound() {
+        audio?.pause()
     }
 }
 

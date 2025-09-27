@@ -16,12 +16,17 @@ actual class SoundPlayer {
         if (soundUrl != null) {
             try {
                 AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback, error = null)
+                player?.stop()
                 player = AVAudioPlayer(contentsOfURL = soundUrl, error = null)
                 player?.play()
             } catch (e: Exception) {
                 println("Error playing sound: ${e.message}")
             }
         }
+    }
+
+    actual fun stopSound() {
+        player?.stop()
     }
 }
 

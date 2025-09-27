@@ -6,21 +6,31 @@ import net.solvetheriddle.roundtimer.AppContext
 import net.solvetheriddle.roundtimer.model.Sound
 
 actual class SoundPlayer(private val context: Context) {
+    private var mediaPlayer: MediaPlayer? = null
+
     actual fun playSound(sound: Sound) {
         try {
             val assetManager = context.assets
             val fileDescriptor = assetManager.openFd("composeResources/roundtimer.composeapp.generated.resources/files/${sound.fileName}")
-            val mediaPlayer = MediaPlayer()
-            mediaPlayer.setDataSource(fileDescriptor.fileDescriptor, fileDescriptor.startOffset, fileDescriptor.length)
+            mediaPlayer?.release()
+            mediaPlayer = MediaPlayer()
+            mediaPlayer?.setDataSource(fileDescriptor.fileDescriptor, fileDescriptor.startOffset, fileDescriptor.length)
             fileDescriptor.close()
-            mediaPlayer.prepare()
-            mediaPlayer.setOnCompletionListener { mp ->
+            mediaPlayer?.prepare()
+            mediaPlayer?.setOnCompletionListener { mp ->
                 mp.release()
+                mediaPlayer = null
             }
-            mediaPlayer.start()
+            mediaPlayer?.start()
         } catch (e: Exception) {
             println("Error playing sound: ${e.message}")
         }
+    }
+
+    actual fun stopSound() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 }
 

@@ -50,7 +50,7 @@ fun ScrollableDial(
     currentSeconds: Int,
     onValueChange: (Int) -> Unit,
     formatTime: (Int) -> String,
-    minValue: Int = 30,
+    minValue: Int = 60,
     maxValue: Int = 600,
     step: Int = 10,
     modifier: Modifier = Modifier

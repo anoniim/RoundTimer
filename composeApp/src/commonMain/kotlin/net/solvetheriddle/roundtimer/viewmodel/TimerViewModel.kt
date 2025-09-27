@@ -21,14 +21,14 @@ import kotlin.time.ExperimentalTime
 private const val UPDATE_INTERVAL = 50L
 
 class TimerViewModel : ViewModel() {
-    
-    private val storage by lazy { 
+
+    private val storage by lazy {
         RoundTimerStorage(createPlatformStorage())
     }
     private val soundPlayer by lazy { getSoundPlayer() }
     private val _state = MutableStateFlow(TimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
-    
+
     init {
         // Initialize storage and load saved rounds
         try {
@@ -45,20 +45,21 @@ class TimerViewModel : ViewModel() {
             // Continue with default state
         }
     }
-    
+
     private var timerJob: Job? = null
     private var audioJob: Job? = null
-    
+
     // Audio cue configuration as per README
     private val audioCues = listOf(
-        AudioCue(threshold = 60, sound = Sound.DUM),
-        AudioCue(threshold = 50, sound = Sound.DUM),
-        AudioCue(threshold = 40, sound = Sound.DUM),
-        AudioCue(threshold = 30, sound = Sound.CALL),
-        AudioCue(threshold = 28, sound = Sound.ALMOST),
-        AudioCue(threshold = 20, sound = Sound.INTENSE),
+        AudioCue(threshold = 60, sound = Sound.CALL),
+        AudioCue(threshold = 50, sound = Sound.CALL),
+        AudioCue(threshold = 45, sound = Sound.CALL),
+        AudioCue(threshold = 42, sound = Sound.CALL),
+        AudioCue(threshold = 39, sound = Sound.CALL),
+        AudioCue(threshold = 36, sound = Sound.INTENSE),
+        AudioCue(threshold = 18, sound = Sound.INTENSE),
     )
-    
+
     fun updateConfiguredTime(seconds: Int) {
         if (!_state.value.isRunning) {
             val milliseconds = seconds * 1000L
@@ -68,7 +69,7 @@ class TimerViewModel : ViewModel() {
             )
         }
     }
-    
+
     fun startTimer() {
         val currentState = _state.value
         _state.value = currentState.copy(
@@ -77,22 +78,22 @@ class TimerViewModel : ViewModel() {
             overtimeTime = 0L,
             isOvertime = false
         )
-        
+
         startCountdown()
     }
-    
+
     private fun startCountdown() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (_state.value.isRunning) {
                 delay(UPDATE_INTERVAL)
-                
+
                 val currentState = _state.value
                 if (currentState.currentTime > 0) {
                     // Normal countdown
                     val newTime = maxOf(0L, currentState.currentTime - UPDATE_INTERVAL)
                     _state.value = currentState.copy(currentTime = newTime)
-                    
+
                     // Handle audio cues (check every 100ms but only trigger on second boundaries)
                     val currentSeconds = (newTime / 1000).toInt()
                     val previousSeconds = (currentState.currentTime / 1000).toInt()
@@ -105,23 +106,29 @@ class TimerViewModel : ViewModel() {
                         isOvertime = true,
                         overtimeTime = currentState.overtimeTime + UPDATE_INTERVAL
                     )
+                    val currentSeconds = _state.value.overtimeSeconds
+                    val previousSeconds = currentState.overtimeSeconds
+                    if (currentSeconds != previousSeconds) {
+                        playSound(Sound.OVERTIME)
+                    }
                 }
             }
         }
     }
-    
-    private fun handleAudioCues(remainingSeconds: Int) {
+
+    private suspend fun handleAudioCues(remainingSeconds: Int) {
         val applicableCue = audioCues.find { it.threshold == remainingSeconds }
         applicableCue?.let { cue ->
             playSound(cue.sound)
-        }
-        
-        // Continue patterns
-        if (remainingSeconds < -1) {
-            playSound(Sound.OVERTIME)
+            when {
+                cue.sound == Sound.DUM && (remainingSeconds == 50 || remainingSeconds == 40) -> {
+                    delay(500)
+                    playSound(cue.sound)
+                }
+            }
         }
     }
-    
+
     private fun playSound(soundName: Sound) {
         soundPlayer.playSound(soundName)
     }
@@ -130,7 +137,8 @@ class TimerViewModel : ViewModel() {
     fun stopTimer() {
         timerJob?.cancel()
         audioJob?.cancel()
-        
+        soundPlayer.stopSound()
+
         val currentState = _state.value
         if (currentState.isRunning) {
             // Save round to history
@@ -142,7 +150,7 @@ class TimerViewModel : ViewModel() {
                 overtime = currentState.overtimeSeconds,
                 timestamp = currentTime
             )
-            
+
             val newRounds = currentState.rounds + round
             _state.value = currentState.copy(
                 isRunning = false,
@@ -151,7 +159,7 @@ class TimerViewModel : ViewModel() {
                 overtimeTime = 0L,
                 rounds = newRounds
             )
-            
+
             // Save to storage asynchronously
             viewModelScope.launch {
                 try {
@@ -162,12 +170,12 @@ class TimerViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun deleteRound(roundId: String) {
         val currentState = _state.value
         val newRounds = currentState.rounds.filter { it.id != roundId }
         _state.value = currentState.copy(rounds = newRounds)
-        
+
         // Save to storage asynchronously
         viewModelScope.launch {
             try {
@@ -177,10 +185,10 @@ class TimerViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun resetHistory() {
         _state.value = _state.value.copy(rounds = emptyList())
-        
+
         // Clear storage asynchronously
         viewModelScope.launch {
             try {
@@ -190,7 +198,7 @@ class TimerViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun formatTime(seconds: Int): String {
         val minutes = seconds / 60
         val remainingSeconds = seconds % 60
@@ -200,7 +208,7 @@ class TimerViewModel : ViewModel() {
             "0:${remainingSeconds.toString().padStart(2, '0')}"
         }
     }
-    
+
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
