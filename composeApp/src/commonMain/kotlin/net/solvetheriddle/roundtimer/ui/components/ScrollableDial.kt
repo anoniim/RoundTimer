@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -15,13 +17,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -39,6 +43,7 @@ import kotlin.math.abs
  * @param step Step size in seconds (default: 10)
  * @param modifier Optional modifier
  */
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScrollableDial(
@@ -60,188 +65,46 @@ fun ScrollableDial(
             }
         }
     }
-    
-    // Ensure current value is valid and in range
-    val validCurrentSeconds = currentSeconds.coerceIn(minValue, maxValue)
-    // Round DOWN to nearest step to avoid jumping to next value
-    val nearestValidValue = values.lastOrNull { it <= validCurrentSeconds } ?: values.first()
-    
-    // Calculate current index based on current value
-    val currentIndex = remember(nearestValidValue, values) {
-        values.indexOf(nearestValidValue).coerceAtLeast(0)
-    }
-    
-    // LazyListState to control scrolling - center the current item (add 1 for spacer)
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = currentIndex + 1,
-        initialFirstVisibleItemScrollOffset = 0
+
+    val pagerState = rememberPagerState(
+        initialPage = values.indexOf(currentSeconds).coerceAtLeast(0),
+        pageCount = { values.size }
     )
-    
-    // Coroutine scope for scrolling animations
-    val coroutineScope = rememberCoroutineScope()
-    
-    // Snap behavior for smooth scrolling to items
-    val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
-    
-    // Track if we're still initializing to prevent value changes during initial positioning
-    var isInitializing by remember { mutableStateOf(true) }
-    
-    // Track the centered item based on scroll position
-    LaunchedEffect(listState) {
-        snapshotFlow { 
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            if (visibleItems.isEmpty()) return@snapshotFlow 0
-            
-            // Target offset at 40% from top (closer to center)
-            val targetOffset = (listState.layoutInfo.viewportSize.height * 0.4f).toInt()
-            
-            // Find closest item to target position
-            var closestItemIndex = 0
-            var closestDistance = Int.MAX_VALUE
-            
-            visibleItems.forEach { item ->
-                // Skip the spacer item (index 0)
-                if (item.index > 0) {
-                    val itemCenter = item.offset + (item.size / 2)
-                    val distance = abs(itemCenter - targetOffset)
-                    if (distance < closestDistance) {
-                        closestDistance = distance
-                        closestItemIndex = item.index - 1  // Adjust for spacer
-                    }
-                }
-            }
-            closestItemIndex
-        }.collect { closestItemIndex ->
-            // Update value if changed and valid (but not during initialization)
-            if (!isInitializing && closestItemIndex in values.indices) {
-                val newValue = values[closestItemIndex]
-                if (newValue != currentSeconds) {
-                    onValueChange(newValue)
-                }
-            }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect { page ->
+            onValueChange(values[page])
         }
     }
-    
-    // Scroll to value when it changes externally (but not from our own updates)
-    var isScrolling by remember { mutableStateOf(false) }
-    LaunchedEffect(nearestValidValue) {
-        if (!isScrolling) {
-            val targetIndex = values.indexOf(nearestValidValue)
-            if (targetIndex >= 0 && abs(listState.firstVisibleItemIndex - (targetIndex + 1)) > 2) {
-                coroutineScope.launch {
-                    listState.animateScrollToItem(
-                        index = targetIndex + 1,  // Add 1 for spacer
-                        scrollOffset = 0
-                    )
-                }
+
+    Box(modifier = modifier.height(200.dp), contentAlignment = Alignment.Center) {
+        VerticalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 64.dp)
+        ) { page ->
+            val pageOffset = with(pagerState) {
+                (currentPage - page) + currentPageOffsetFraction
             }
-        }
-    }
-    
-    // Track scrolling state
-    LaunchedEffect(listState.isScrollInProgress) {
-        isScrolling = listState.isScrollInProgress
-    }
-    
-    // Delay to let initial scroll settle
-    LaunchedEffect(Unit) {
-        // Wait a bit for initial scroll to settle
-        delay(100)
-        isInitializing = false
-    }
-    
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        // Calculate dynamic padding based on height
-        val selectionOffsetRatio = 0.3f // Selection point at 30% from top
-        
-        // Main scrollable list
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            flingBehavior = flingBehavior,
-            // Padding adjusted for center selection point
-            // Top padding allows scrolling to first item
-            // Bottom padding prevents scrolling past last item
-            contentPadding = PaddingValues(top = 0.dp, bottom = 120.dp)
-        ) {
-            // Add empty spacer item at the beginning to allow first value to scroll down
-            item {
-                Spacer(modifier = Modifier.height(50.dp))
-            }
-            
-            items(values.size) { index ->
-                val value = values[index]
-                
-                DialItem(
-                    value = value,
-                    index = index + 1,  // Add 1 because of spacer item
-                    listState = listState,
-                    formatTime = formatTime,
-                    primaryColor = MaterialTheme.colorScheme.primary,
-                    secondaryColor = MaterialTheme.colorScheme.onSurface
+            val scale = lerp(1f, 0.75f, abs(pageOffset))
+            val alpha = lerp(1f, 0.25f, abs(pageOffset))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        alpha = alpha
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = formatTime(values[page]),
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun LazyItemScope.DialItem(
-    value: Int,
-    index: Int,
-    listState: LazyListState,
-    formatTime: (Int) -> String,
-    primaryColor: Color,
-    secondaryColor: Color
-) {
-    // Calculate item's position relative to the selection point (40% from top)
-    val layoutInfo = listState.layoutInfo
-    val viewportHeight = layoutInfo.viewportSize.height
-    val targetOffset = (viewportHeight * 0.4f).toInt()
-    
-    // Find this item in the visible items
-    val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
-    
-    // Calculate how close this item is to the selection point (0 = selected, 1 = far)
-    val distanceFromCenter = itemInfo?.let { info ->
-        val itemCenter = info.offset + (info.size / 2)
-        val distance = abs(itemCenter - targetOffset).toFloat()
-        // Normalize to 0-1 range where 0 is at target position
-        (distance / (viewportHeight * 0.4f)).coerceIn(0f, 1f)
-    } ?: 1f
-    
-    // Interpolate values based on distance from center
-    val scale = 1f - (distanceFromCenter * 0.5f) // Scale from 1.0 to 0.5
-    val fontSize = (72f - (44f * distanceFromCenter)).sp // Interpolate from 72sp to 28sp
-    val alpha = 1f - (distanceFromCenter * 0.6f) // Alpha from 1.0 to 0.4
-    
-    // Interpolate color based on distance
-    val textColor = lerp(primaryColor, secondaryColor, distanceFromCenter)
-    
-    // Font weight transitions
-    val fontWeight = if (distanceFromCenter < 0.3f) FontWeight.Bold else FontWeight.Normal
-    
-    // Only show items that are reasonably close to center
-    if (distanceFromCenter <= 1f) {
-        Text(
-            text = formatTime(value),
-            fontSize = fontSize,
-            fontWeight = fontWeight,
-            color = textColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .alpha(alpha)
-                .fillMaxWidth()
-                .padding(vertical = 2.dp)
-        )
-    } else {
-        // Spacer for items too far from center
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }

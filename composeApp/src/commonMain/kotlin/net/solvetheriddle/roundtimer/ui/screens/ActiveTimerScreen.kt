@@ -1,7 +1,6 @@
 package net.solvetheriddle.roundtimer.ui.screens
 
 import androidx.compose.animation.core.*
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -93,7 +92,7 @@ fun ActiveTimerScreen(
             modifier = Modifier
                 .scale(if (state.isOvertime) pulseScale else 1f)
                 .clickable(onClick = onStopTimer),
-            animatedSize = boxWidth
+            size = boxWidth
         ) {
             // Main countdown display
             Text(

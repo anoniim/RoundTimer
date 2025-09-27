@@ -6,7 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -21,31 +21,28 @@ import androidx.compose.ui.unit.dp
  * - 32dp internal padding
  * 
  * @param modifier Optional modifier to apply to the outer container
- * @param animatedSize Optional animated size for dynamic sizing (defaults to 350dp)
+ * @param size Optional animated size for dynamic sizing (defaults to 350dp)
  * @param verticalArrangement Vertical arrangement for the content (defaults to Center)
  * @param content The content to display inside the card
  */
 @Composable
 fun StyledCard(
     modifier: Modifier = Modifier,
-    animatedSize: androidx.compose.ui.unit.Dp = 350.dp,
+    size: Dp = 350.dp,
     verticalArrangement: Arrangement.Vertical = Arrangement.Center,
     content: @Composable ColumnScope.() -> Unit
 ) {
     // Card container with padding to prevent shadow clipping
     Box(
         modifier = modifier
-            .width(animatedSize)
-            .height(animatedSize)
+            .width(size)
+            .height(size)
             .padding(24.dp), // Add padding to provide space for shadow
     ) {
         // Main content card
         Card(
             modifier = Modifier.fillMaxSize(),
             shape = RoundedCornerShape(40.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.95f)
-            ),
             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
         ) {
             Column(

@@ -1,5 +1,6 @@
 package net.solvetheriddle.roundtimer.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,7 +20,7 @@ import net.solvetheriddle.roundtimer.platform.getStatusBarManager
 import net.solvetheriddle.roundtimer.ui.components.ScrollableDial
 import net.solvetheriddle.roundtimer.ui.components.StyledCard
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ConfigurationScreen(
     state: TimerState,
@@ -64,7 +65,7 @@ fun ConfigurationScreen(
                 // Centered StyledCard with scrollable dial
                 StyledCard(
                     modifier = Modifier,
-                    animatedSize = 450.dp,
+                    size = 380.dp,
                     verticalArrangement = Arrangement.Top
                 ) {
                     // Scrollable dial for time selection

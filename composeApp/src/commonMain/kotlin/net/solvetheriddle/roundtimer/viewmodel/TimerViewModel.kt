@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.solvetheriddle.roundtimer.model.AudioCue
-import net.solvetheriddle.roundtimer.model.BeatPattern
+import net.solvetheriddle.roundtimer.model.Sound
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
 import net.solvetheriddle.roundtimer.storage.RoundTimerStorage
@@ -49,10 +49,12 @@ class TimerViewModel : ViewModel() {
     
     // Audio cue configuration as per README
     private val audioCues = listOf(
-        AudioCue(threshold = 30, beatPattern = BeatPattern.SINGLE),   // 30s: single beat every 5s
-        AudioCue(threshold = 20, beatPattern = BeatPattern.SINGLE),   // 20s: single beat every 1s
-        AudioCue(threshold = 15, beatPattern = BeatPattern.DOUBLE),   // 15s: double beat every 1s
-        AudioCue(threshold = 10, beatPattern = BeatPattern.DOUBLE)    // 10s: 2 double beats per second
+        AudioCue(threshold = 60, sound = Sound.DUM),
+        AudioCue(threshold = 50, sound = Sound.DUM),
+        AudioCue(threshold = 40, sound = Sound.DUM),
+        AudioCue(threshold = 30, sound = Sound.CALL),
+        AudioCue(threshold = 28, sound = Sound.ALMOST),
+        AudioCue(threshold = 20, sound = Sound.INTENSE),
     )
     
     fun updateConfiguredTime(seconds: Int) {
@@ -87,20 +89,13 @@ class TimerViewModel : ViewModel() {
                 if (currentState.currentTime > 0) {
                     // Normal countdown
                     val newTime = maxOf(0L, currentState.currentTime - UPDATE_INTERVAL)
-                    _state.value = currentState.copy(
-                        currentTime = newTime
-                    )
+                    _state.value = currentState.copy(currentTime = newTime)
                     
                     // Handle audio cues (check every 100ms but only trigger on second boundaries)
                     val currentSeconds = (newTime / 1000).toInt()
                     val previousSeconds = (currentState.currentTime / 1000).toInt()
                     if (currentSeconds != previousSeconds) {
                         handleAudioCues(currentSeconds)
-                        
-                        // Check if time reached zero
-                        if (currentSeconds == 0) {
-                            playGongSound()
-                        }
                     }
                 } else {
                     // Overtime mode
@@ -116,37 +111,19 @@ class TimerViewModel : ViewModel() {
     private fun handleAudioCues(remainingSeconds: Int) {
         val applicableCue = audioCues.find { it.threshold == remainingSeconds }
         applicableCue?.let { cue ->
-            when {
-                cue.threshold == 30 -> playDrumBeat(cue.beatPattern, 0.2) // Every 5 seconds
-                cue.threshold == 20 -> playDrumBeat(cue.beatPattern, 1.0) // Every second
-                cue.threshold == 15 -> playDrumBeat(cue.beatPattern, 1.0) // Every second
-                cue.threshold == 10 -> playDrumBeat(cue.beatPattern, 2.0) // 2 per second
-            }
+            playSound(cue.sound)
         }
         
         // Continue patterns
-        when (remainingSeconds) {
-            in 1..30 -> {
-                if (remainingSeconds % 5 == 0 && remainingSeconds <= 30) {
-                    playDrumBeat(BeatPattern.SINGLE, 0.2)
-                }
-            }
-            in 1..20 -> playDrumBeat(BeatPattern.SINGLE, 1.0)
-            in 1..15 -> playDrumBeat(BeatPattern.DOUBLE, 1.0)
-            in 1..10 -> playDrumBeat(BeatPattern.DOUBLE, 2.0)
+        if (remainingSeconds < -1) {
+            playSound(Sound.OVERTIME)
         }
     }
     
-    private fun playDrumBeat(pattern: BeatPattern, frequency: Double) {
-        // Placeholder for audio implementation
-        // This would be platform-specific
+    private fun playSound(soundName: Sound) {
+        println("Playing: $soundName")
     }
-    
-    private fun playGongSound() {
-        // Placeholder for gong sound implementation
-        // This would be platform-specific
-    }
-    
+
     @OptIn(ExperimentalTime::class)
     fun stopTimer() {
         timerJob?.cancel()
