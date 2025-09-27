@@ -13,6 +13,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        // Initialize AppContext
+        AppContext.initialize(this)
         
         // Initialize StatusBarManager with this activity
         StatusBarManager.initialize(this)

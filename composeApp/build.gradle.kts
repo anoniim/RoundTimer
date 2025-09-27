@@ -25,6 +25,8 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+            linkerOpts.add("-framework")
+            linkerOpts.add("AVFoundation")
         }
     }
     

@@ -3,6 +3,7 @@ package net.solvetheriddle.roundtimer.ui.screens
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -91,7 +92,11 @@ fun ActiveTimerScreen(
         StyledCard(
             modifier = Modifier
                 .scale(if (state.isOvertime) pulseScale else 1f)
-                .clickable(onClick = onStopTimer),
+                .clickable(
+                    onClick = onStopTimer,
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ),
             size = boxWidth
         ) {
             // Main countdown display

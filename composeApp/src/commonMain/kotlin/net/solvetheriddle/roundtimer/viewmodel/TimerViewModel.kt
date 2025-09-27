@@ -13,6 +13,7 @@ import net.solvetheriddle.roundtimer.model.AudioCue
 import net.solvetheriddle.roundtimer.model.Sound
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.platform.getSoundPlayer
 import net.solvetheriddle.roundtimer.storage.RoundTimerStorage
 import net.solvetheriddle.roundtimer.storage.createPlatformStorage
 import kotlin.time.ExperimentalTime
@@ -24,6 +25,7 @@ class TimerViewModel : ViewModel() {
     private val storage by lazy { 
         RoundTimerStorage(createPlatformStorage())
     }
+    private val soundPlayer by lazy { getSoundPlayer() }
     private val _state = MutableStateFlow(TimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
     
@@ -121,7 +123,7 @@ class TimerViewModel : ViewModel() {
     }
     
     private fun playSound(soundName: Sound) {
-        println("Playing: $soundName")
+        soundPlayer.playSound(soundName)
     }
 
     @OptIn(ExperimentalTime::class)
