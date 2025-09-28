@@ -48,6 +48,8 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation("androidx.datastore:datastore-preferences:1.1.1")
+            implementation("androidx.core:core-splashscreen:1.0.1")
+            implementation("com.google.android.material:material:1.11.0")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -76,6 +78,14 @@ kotlin {
 android {
     namespace = "net.solvetheriddle.roundtimer"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    buildFeatures {
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.kotlin.get()
+    }
 
     defaultConfig {
         applicationId = "net.solvetheriddle.roundtimer"

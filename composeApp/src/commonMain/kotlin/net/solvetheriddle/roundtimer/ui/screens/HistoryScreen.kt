@@ -58,6 +58,7 @@ fun HistoryScreen(
     val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
     val shortestRound = if (totalRounds > 0) filteredRounds.minOf { it.duration } else 0
     val longestRound = if (totalRounds > 0) filteredRounds.maxOf { it.duration } else 0
+    val isLandscape = rememberIsLandscape()
 
     Scaffold(
         topBar = {
@@ -84,6 +85,9 @@ fun HistoryScreen(
                                 fontWeight = FontWeight.Medium
                             )
                         }
+                        if (isLandscape) {
+                            Spacer(modifier = Modifier.width(82.dp))
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -93,7 +97,6 @@ fun HistoryScreen(
         }
     ) { innerPadding ->
         val lazyListState = rememberLazyListState()
-        val isLandscape = rememberIsLandscape()
 
         Box(
             modifier = Modifier.fillMaxSize()
@@ -137,7 +140,7 @@ fun HistoryScreen(
                     modifier = Modifier
                         .widthIn(max = 1200.dp)
                         .fillMaxHeight()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                        .padding(horizontal = 84.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Left side: Statistics

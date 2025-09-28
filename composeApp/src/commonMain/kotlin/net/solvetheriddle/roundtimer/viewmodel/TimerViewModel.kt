@@ -76,11 +76,10 @@ class TimerViewModel : ViewModel() {
     private val audioCues = listOf(
         AudioCue(threshold = 60, sound = Sound.CALL),
         AudioCue(threshold = 50, sound = Sound.CALL),
-        AudioCue(threshold = 45, sound = Sound.CALL),
-        AudioCue(threshold = 42, sound = Sound.CALL),
-        AudioCue(threshold = 39, sound = Sound.CALL),
+        AudioCue(threshold = 40, sound = Sound.CALL),
         AudioCue(threshold = 36, sound = Sound.INTENSE),
-        AudioCue(threshold = 18, sound = Sound.INTENSE),
+        AudioCue(threshold = 19, sound = Sound.INTENSE),
+        AudioCue(threshold = 0, sound = Sound.OVERTIME),
     )
 
     fun updateConfiguredTime(seconds: Int) {

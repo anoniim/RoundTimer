@@ -106,15 +106,15 @@ fun ConfigurationScreen(
                                 onClick = onStartTimer,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(40.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
                                 ),
                             ) {
                                 Text(
                                     text = "START",
-                                    fontSize = 18.sp,
+                                    fontSize = 24.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
@@ -159,8 +159,8 @@ private fun GamesButton(onGamesClick: () -> Unit) {
     FloatingActionButton(
         modifier = Modifier.size(68.dp),
         onClick = onGamesClick,
-        containerColor = MaterialTheme.colorScheme.tertiary,
-        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
         Icon(
             imageVector = Icons.Filled.List,
@@ -174,8 +174,8 @@ private fun HistoryButton(onHistoryClick: () -> Unit) {
     FloatingActionButton(
         modifier = Modifier.size(68.dp),
         onClick = onHistoryClick,
-        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
     ) {
         Icon(
             imageVector = Icons.Filled.History,

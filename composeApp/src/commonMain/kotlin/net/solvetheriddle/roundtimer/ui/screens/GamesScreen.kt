@@ -204,7 +204,7 @@ fun GamesScreen(
                                 .fillMaxHeight()
                                 .padding(vertical = 16.dp)
                                 .padding(horizontal = 48.dp)
-                                .padding(end = 48.dp)
+                                .padding(end = 48.dp, bottom = 32.dp)
                                 .width(150.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
@@ -266,17 +266,21 @@ private fun NewGameDialog(onDismiss: () -> Unit, onStart: (String) -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Start New Game", color = MaterialTheme.colorScheme.onSurface) },
+        title = { Text("Start new game", color = MaterialTheme.colorScheme.onBackground) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Game Name (Optional)") },
+                label = { Text("Game name (optional)") },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onStart(name) }),
                 modifier = Modifier.focusRequester(focusRequester),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
                 )
             )
             LaunchedEffect(Unit) {
@@ -299,17 +303,17 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Game Name", color = MaterialTheme.colorScheme.onSurface) },
+        title = { Text("Edit game", color = MaterialTheme.colorScheme.onBackground) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Game Name") },
+                label = { Text("Game name") },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onSave(name) }),
                 modifier = Modifier.focusRequester(focusRequester),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground, unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 )
             )
             LaunchedEffect(Unit) {
@@ -318,22 +322,17 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
         },
         confirmButton = {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+                Button(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
                     Text("Delete", color = MaterialTheme.colorScheme.onError)
                 }
-                Row {
-                    Button(
-                        onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                    ) {
-                        Text("Cancel", color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { onSave(name) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Text("Save", color = MaterialTheme.colorScheme.onPrimary)
-                    }
+                Button(
+                    onClick = { onSave(name) },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Save", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         },
@@ -361,7 +360,7 @@ private fun GameListItem(
                 onLongClick = onLongClick
             )
             .background(
-                color = if (isActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                color = if (isActive) MaterialTheme.colorScheme.secondary else Color.Transparent,
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(16.dp),
@@ -382,12 +381,12 @@ private fun GameListItem(
                 } else {
                     MaterialTheme.typography.titleMedium
                 },
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text(text = "$totalRounds rounds", color = MaterialTheme.colorScheme.onSurface)
-            Text(text = "Avg ${formatTime(averageTime)}", color = MaterialTheme.colorScheme.onSurface)
+            Text(text = "$totalRounds rounds", color = MaterialTheme.colorScheme.onBackground)
+            Text(text = "Avg ${formatTime(averageTime)}", color = MaterialTheme.colorScheme.onBackground)
         }
     }
 }

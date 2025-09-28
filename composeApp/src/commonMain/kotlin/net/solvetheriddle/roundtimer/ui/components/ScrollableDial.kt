@@ -91,7 +91,7 @@ fun ScrollableDial(
         VerticalPager(
             state = pagerState,
             modifier = Modifier.sizeIn(maxWidth = 180.dp, maxHeight = 180.dp),
-            pageSize = PageSize.Fixed(50.dp),
+            pageSize = PageSize.Fixed(64.dp),
             contentPadding = PaddingValues(vertical = 60.dp)
         ) { page ->
             val pageOffset = with(pagerState) {
@@ -112,10 +112,10 @@ fun ScrollableDial(
             ) {
                 Text(
                     text = formatTime(values[page]),
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 64.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }

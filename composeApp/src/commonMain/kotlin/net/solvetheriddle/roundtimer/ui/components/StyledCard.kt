@@ -38,7 +38,7 @@ fun StyledCard(
         modifier = modifier
             .width(size)
             .height(size)
-            .padding(24.dp), // Add padding to provide space for shadow
+            .padding(12.dp), // Add padding to provide space for shadow
     ) {
         // Main content card
         Card(

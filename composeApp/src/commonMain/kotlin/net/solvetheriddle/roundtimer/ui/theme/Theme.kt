@@ -8,17 +8,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 // Light theme colors
-val LightPrimary = Color(0xffb96eea)
-val LightPrimaryContainer = Color(0xffcfbfd1)
+val LightPrimary = Color(0xffd80073)
+val LightPrimaryContainer = Color(0xfffbd4ea)
 val LightSecondary = Color(0xffdacabb)
+val LightTertiary = Color(0xffaa6786)
 val LightSecondaryContainer = Color(0xfff8edde)
 val LightBackground = Color(0xfff8d2b3)
 val LightSurface = Color(0xfffff5d5)
-val LightError = Color(0xFFB00020)
+val LightError = Color(0xff000000)
 val LightOnPrimary = Color(0xFFFFFFFF)
 val LightOnSecondary = Color(0xFF000000)
-val LightOnBackground = Color(0xFF000000)
-val LightOnSurface = Color(0xFF000000)
+val LightOnBackground = Color(0xff373737)
+val LightOnSurface = Color(0xff494248)
 val LightOnError = Color(0xFFFFFFFF)
 
 val GreenBackground = Color(0xFF10B981)
@@ -29,17 +30,18 @@ val OrangeBox = Color(0xfffbf2cf)
 val RedBox = Color(0xfff8d2b3)
 
 // Dark theme colors
-val DarkPrimary = Color(0xff643c80)
-val DarkPrimaryContainer = Color(0xff454745)
+val DarkPrimary = Color(0xff870048)
+val DarkPrimaryContainer = Color(0xff450026)
 val DarkSecondary = Color(0xff675c57)
+val DarkTertiary = Color(0xFF03DAC5)
 val DarkSecondaryContainer = Color(0xff232222)
-val DarkBackground = Color(0xff290000)
-val DarkSurface = Color(0xff3a2b02)
-val DarkError = Color(0xFFCF6679)
-val DarkOnPrimary = Color(0xFF000000)
+val DarkBackground = Color(0xff2e0404)
+val DarkSurface = Color(0xff977200)
+val DarkError = Color(0xffd3a3ae)
+val DarkOnPrimary = Color(0xffa3a3a3)
 val DarkOnSecondary = Color(0xFF000000)
-val DarkOnBackground = Color(0xFFFFFFFF)
-val DarkOnSurface = Color(0xFFFFFFFF)
+val DarkOnBackground = Color(0xffc3c3c3)
+val DarkOnSurface = Color(0xffbda8b6)
 val DarkOnError = Color(0xFF000000)
 
 private val LightColorScheme = lightColorScheme(
@@ -47,6 +49,7 @@ private val LightColorScheme = lightColorScheme(
     primaryContainer = LightPrimaryContainer,
     secondary = LightSecondary,
     secondaryContainer = LightSecondaryContainer,
+    tertiary = LightTertiary,
     background = LightBackground,
     surface = LightSurface,
     error = LightError,
@@ -62,6 +65,7 @@ private val DarkColorScheme = darkColorScheme(
     primaryContainer = DarkPrimaryContainer,
     secondary = DarkSecondary,
     secondaryContainer = DarkSecondaryContainer,
+    tertiary = DarkTertiary,
     background = DarkBackground,
     surface = DarkSurface,
     error = DarkError,
@@ -74,7 +78,7 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun RoundTimerTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    val colors = if (!darkTheme) {
+    val colors = if (darkTheme) {
         DarkColorScheme
     } else {
         LightColorScheme

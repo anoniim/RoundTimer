@@ -1,9 +1,11 @@
 package net.solvetheriddle.roundtimer.ui.screens
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,9 +35,10 @@ fun ActiveTimerScreen(
     formatTime: (Int) -> String
 ) {
     // Set status bar to dark content for light mode
-    LaunchedEffect(Unit) {
+    val isDarkTheme = isSystemInDarkTheme()
+    LaunchedEffect(isDarkTheme) {
         try {
-            getStatusBarManager().setStatusBarStyle(isDarkContent = true)
+            getStatusBarManager().setStatusBarStyle(isDarkContent = !isDarkTheme)
         } catch (e: Exception) {
             // Handle platforms that don't support status bar styling
         }
@@ -48,49 +52,60 @@ fun ActiveTimerScreen(
         ),
         label = "pulse"
     )
-    
+
     // Size transition animation for overtime
     val boxSizeTransition = updateTransition(targetState = state.isOvertime, label = "boxSizeTransition")
-    
+
     val boxWidth by boxSizeTransition.animateDp(
         transitionSpec = { spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow) },
         label = "boxWidth"
     ) { isOvertime -> if (isOvertime) 380.dp else 350.dp }
-    
-    val boxHeight by boxSizeTransition.animateDp(
-        transitionSpec = { spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow) },
-        label = "boxHeight"
-    ) { isOvertime -> if (isOvertime) 420.dp else 350.dp }
 
     // Calculate progress fill percentage
     val progressPercentage = if (state.configuredTime > 0) {
         1f - (state.currentTime.toFloat() / state.configuredTime.toFloat())
     } else 1f
 
-    // Determine background color based on remaining time
     val activeColor = when {
         state.isOvertime -> RedBackground // Red for overtime
         state.currentSeconds <= 36 -> RedBackground // Red
         state.currentSeconds <= 60 -> OrangeBackground // Orange
         else -> GreenBackground // Green
     }
+    // Determine background color based on remaining time
+    val animatedBackgroundColor by animateColorAsState(
+        targetValue = activeColor,
+        animationSpec = tween(1000),
+        label = "backgroundColorAnimation"
+    )
+    val activeBoxColor = when (activeColor) {
+        RedBackground -> RedBox
+        OrangeBackground -> OrangeBox
+        else -> GreenBox
+    }
+    val animatedBoxColor by animateColorAsState(
+        targetValue = activeBoxColor,
+        animationSpec = tween(1000),
+        label = "boxColorAnimation"
+    )
+
 
     Box(
-        modifier = Modifier.fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        RedBackground.copy(alpha = 0.1f),
-                        OrangeBackground.copy(alpha = 0.1f),
-                        GreenBackground.copy(alpha = 0.1f),
-                    )
-                )
-            ),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         // Progress fill background
         Box(
             modifier = Modifier.fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            RedBackground.copy(alpha = 0.1f),
+                            OrangeBackground.copy(alpha = 0.1f),
+                            GreenBackground.copy(alpha = 0.1f),
+                        )
+                    )
+                )
         ) {
             // Background fill that rises from bottom
             Box(
@@ -98,7 +113,7 @@ fun ActiveTimerScreen(
                     .fillMaxWidth()
                     .fillMaxHeight(fraction = progressPercentage)
                     .align(Alignment.BottomCenter)
-                    .background(activeColor.copy(alpha = 0.5f))
+                    .background(animatedBackgroundColor.copy(alpha = 0.5f))
             )
         }
 
@@ -117,8 +132,8 @@ fun ActiveTimerScreen(
                 Text(
                     text = formatTime(state.currentSeconds),
                     fontSize = 96.sp, // Extra large as per README (8xl equivalent)
-                    fontWeight = FontWeight.Bold,
-                    color = activeColor,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = animatedBackgroundColor,
                     textAlign = TextAlign.Center,
                     lineHeight = 96.sp
                 )
@@ -142,14 +157,10 @@ fun ActiveTimerScreen(
                     text = "STOP",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color.DarkGray
                 )
             },
-            colors = CardDefaults.cardColors(containerColor = when (activeColor) {
-                RedBackground -> RedBox
-                OrangeBackground -> OrangeBox
-                else -> GreenBox
-            })
+            colors = CardDefaults.cardColors(containerColor = animatedBoxColor)
         )
     }
 }
