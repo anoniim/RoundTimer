@@ -81,7 +81,7 @@ fun HistoryScreen(
                             )
                         ) {
                             Text(
-                                text = "Reset",
+                                text = "RESET",
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -172,11 +172,11 @@ fun HistoryScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    StatisticItem("Total Rounds", totalRounds.toString())
-                                    StatisticItem("Total Time", formatTime(totalTime))
-                                    StatisticItem("Shortest Round", formatTime(shortestRound))
-                                    StatisticItem("Longest Round", formatTime(longestRound))
-                                    StatisticItem("Average Time", formatTime(averageTime))
+                                    StatisticItem("Total rounds", totalRounds.toString())
+                                    StatisticItem("Total time", formatTime(totalTime))
+                                    StatisticItem("Fastest round", formatTime(shortestRound))
+                                    StatisticItem("Slowest round", formatTime(longestRound))
+                                    StatisticItem("Average time", formatTime(averageTime))
                                 }
                             }
                         }
@@ -250,11 +250,11 @@ fun HistoryScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        StatisticItem("Total Rounds", totalRounds.toString())
-                                        StatisticItem("Total Time", formatTime(totalTime))
-                                        StatisticItem("Shortest Round", formatTime(shortestRound))
-                                        StatisticItem("Longest Round", formatTime(longestRound))
-                                        StatisticItem("Average Time", formatTime(averageTime))
+                                        StatisticItem("Total rounds", totalRounds.toString())
+                                        StatisticItem("Total time", formatTime(totalTime))
+                                        StatisticItem("Shortest round", formatTime(shortestRound))
+                                        StatisticItem("Longest round", formatTime(longestRound))
+                                        StatisticItem("Average time", formatTime(averageTime))
                                     }
                                 }
                             }
@@ -357,7 +357,7 @@ private fun SwipeableRoundItem(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Delete",
+                            text = "DELETE",
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             fontWeight = FontWeight.Medium
                         )

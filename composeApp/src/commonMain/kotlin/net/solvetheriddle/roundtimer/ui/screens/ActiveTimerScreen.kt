@@ -27,6 +27,7 @@ import net.solvetheriddle.roundtimer.ui.theme.OrangeBackground
 import net.solvetheriddle.roundtimer.ui.theme.OrangeBox
 import net.solvetheriddle.roundtimer.ui.theme.RedBackground
 import net.solvetheriddle.roundtimer.ui.theme.RedBox
+import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 
 @Composable
 fun ActiveTimerScreen(
@@ -90,6 +91,8 @@ fun ActiveTimerScreen(
     )
 
 
+    val isLandscape = rememberIsLandscape()
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -110,9 +113,9 @@ fun ActiveTimerScreen(
             // Background fill that rises from bottom
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(fraction = progressPercentage)
-                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(if (isLandscape) progressPercentage else 1f)
+                    .fillMaxHeight(if (isLandscape) 1f else progressPercentage)
+                    .align(if (isLandscape) Alignment.CenterStart else Alignment.BottomCenter)
                     .background(animatedBackgroundColor.copy(alpha = 0.5f))
             )
         }
