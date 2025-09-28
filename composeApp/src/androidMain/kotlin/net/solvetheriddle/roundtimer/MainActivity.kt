@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.google.firebase.FirebaseApp
 import net.solvetheriddle.roundtimer.platform.StatusBarManager
 import net.solvetheriddle.roundtimer.storage.initializeStorageFactory
 
@@ -19,6 +20,9 @@ class MainActivity : ComponentActivity() {
 
         // Initialize AppContext
         AppContext.initialize(this)
+
+        // Initialize Firebase
+        FirebaseApp.initializeApp(this)
         
         // Initialize StatusBarManager with this activity
         StatusBarManager.initialize(this)

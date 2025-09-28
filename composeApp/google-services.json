@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "190921585845",
+    "project_id": "round-timer-7c04a",
+    "storage_bucket": "round-timer-7c04a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:190921585845:android:8f88710e719372a386fafc",
+        "android_client_info": {
+          "package_name": "net.solvetheriddle.roundtimer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbj9yEWuhikxTH-8Od--uL35kvDvMoFGY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

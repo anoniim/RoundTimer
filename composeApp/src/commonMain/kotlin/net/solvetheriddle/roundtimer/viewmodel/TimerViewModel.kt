@@ -27,6 +27,7 @@ import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
 import net.solvetheriddle.roundtimer.platform.getScreenLocker
 import net.solvetheriddle.roundtimer.platform.getSoundPlayer
+import net.solvetheriddle.roundtimer.platform.getAnalyticsService
 import net.solvetheriddle.roundtimer.storage.RoundTimerStorage
 import net.solvetheriddle.roundtimer.storage.createPlatformStorage
 import kotlin.time.ExperimentalTime
@@ -40,6 +41,7 @@ class TimerViewModel : ViewModel() {
     }
     private val soundPlayer by lazy { getSoundPlayer() }
     private val screenLocker by lazy { getScreenLocker() }
+    private val analyticsService by lazy { getAnalyticsService() }
     private val _state = MutableStateFlow(TimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
 
@@ -118,6 +120,9 @@ class TimerViewModel : ViewModel() {
             val newGame = Game(id = Clock.System.now().toEpochMilliseconds().toString(), date = getCurrentDate(), name = "")
             val newGames = currentState.games + newGame
             currentState = currentState.copy(games = newGames, activeGameId = newGame.id)
+            analyticsService.logEvent(
+                "game_created", mapOf("game_id" to newGame.id, "game_date" to newGame.date, "game_name" to newGame.name)
+            )
             viewModelScope.launch {
                 storage.saveGames(newGames)
             }
@@ -128,6 +133,9 @@ class TimerViewModel : ViewModel() {
             currentTime = currentState.configuredTime,
             overtimeTime = 0L,
             isOvertime = false
+        )
+        analyticsService.logEvent(
+            "timer_started", mapOf("game_id" to currentState.activeGameId!!, "configured_time" to currentState.configuredTime.toString())
         )
 
         startCountdown()
@@ -213,6 +221,13 @@ class TimerViewModel : ViewModel() {
                 rounds = newRounds
             )
 
+            analyticsService.logEvent(
+                "timer_stopped", mapOf(
+                    "game_id" to currentState.activeGameId,
+                    "duration" to durationSeconds.toString(),
+                    "overtime" to round.overtime.toString()
+                )
+            )
             // Save to storage asynchronously
             viewModelScope.launch {
                 try {
@@ -228,8 +243,7 @@ class TimerViewModel : ViewModel() {
         val currentState = _state.value
         val newRounds = currentState.rounds.filter { it.id != roundId }
         _state.value = currentState.copy(rounds = newRounds)
-
-        // Save to storage asynchronously
+        analyticsService.logEvent("round_deleted", mapOf("round_id" to roundId, "game_id" to currentState.activeGameId!!))
         viewModelScope.launch {
             try {
                 storage.saveRounds(newRounds)
@@ -241,8 +255,10 @@ class TimerViewModel : ViewModel() {
 
     fun resetHistoryForGame(gameId: String) {
         val currentState = _state.value
+        val roundsToDelete = currentState.rounds.filter { it.gameId == gameId }
         val newRounds = currentState.rounds.filter { it.gameId != gameId }
         _state.value = currentState.copy(rounds = newRounds)
+        analyticsService.logEvent("history_reset_for_game", mapOf("game_id" to gameId, "rounds_deleted" to roundsToDelete.size.toString()))
 
         // Clear storage asynchronously
         viewModelScope.launch {
@@ -268,6 +284,9 @@ class TimerViewModel : ViewModel() {
         val newGame = Game(id = Clock.System.now().toEpochMilliseconds().toString(), date = getCurrentDate(), name = name)
         val newGames = (_state.value.games + newGame).sortedByDescending { it.id }
         _state.value = _state.value.copy(games = newGames, activeGameId = newGame.id)
+        analyticsService.logEvent(
+            "game_created_manually", mapOf("game_id" to newGame.id, "game_date" to newGame.date, "game_name" to newGame.name)
+        )
         viewModelScope.launch {
             storage.saveGames(newGames)
         }
@@ -289,6 +308,7 @@ class TimerViewModel : ViewModel() {
             }
         }.sortedByDescending { it.id }
         _state.value = _state.value.copy(games = updatedGames)
+        analyticsService.logEvent("game_name_updated", mapOf("game_id" to gameId, "new_name" to name))
         viewModelScope.launch {
             storage.saveGames(updatedGames)
         }
@@ -303,6 +323,7 @@ class TimerViewModel : ViewModel() {
             currentState.activeGameId
         }
         _state.value = currentState.copy(games = newGames, activeGameId = newActiveGameId)
+        analyticsService.logEvent("game_deleted", mapOf("game_id" to gameId))
         viewModelScope.launch {
             storage.saveGames(newGames)
             storage.saveActiveGameId(newActiveGameId)

@@ -12,6 +12,8 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.kotlinxSerialization)
+
+    id("com.google.gms.google-services")
 }
 
 kotlin {
@@ -53,6 +55,8 @@ kotlin {
             implementation("androidx.datastore:datastore-preferences:1.1.1")
             implementation("androidx.core:core-splashscreen:1.0.1")
             implementation("com.google.android.material:material:1.11.0")
+
+            implementation("com.google.firebase:firebase-analytics")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -136,6 +140,7 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.firebase.bom))
     debugImplementation(compose.uiTooling)
 }
 
@@ -146,7 +151,9 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "net.solvetheriddle.roundtimer"
-            packageVersion = getGitVersionName()
+
+            val gitVersion = getGitVersionName()
+            packageVersion = gitVersion.split("+")[0].split("-")[0]
         }
     }
 }
