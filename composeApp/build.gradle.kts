@@ -1,6 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val localProperties = loadLocalProperties()
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -91,16 +94,38 @@ android {
         applicationId = "net.solvetheriddle.roundtimer"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        // App version
+        versionCode = project.getGitVersionCode()
+        println("Version code: $versionCode")
+        versionName = project.getGitVersionName()
+        println("Version name: $versionName")
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        create("release") {
+            val keystorePath = localProperties.getProperty("android.keystore.path") ?: "../app.keystore"
+            val keyPassword = System.getenv("ANDROID_KEYSTORE_PASS") ?: localProperties.getProperty("android.keystore.pass")
+            if (keyPassword != null) {
+                val keystoreFile = file(keystorePath)
+                if (keystoreFile.exists()) {
+                    storeFile = keystoreFile
+                    storePassword = keyPassword
+                    keyAlias = "production"
+                    this.keyPassword = keyPassword
+                } else System.err.println("Keystore file not found")
+            } else System.err.println("Keystore password not set")
+        }
+    }
     buildTypes {
         getByName("release") {
+            isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
+        }
+        getByName("debug") {
             isMinifyEnabled = false
         }
     }
@@ -121,7 +146,16 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "net.solvetheriddle.roundtimer"
-            packageVersion = "1.0.0"
+            packageVersion = getGitVersionName()
         }
     }
+}
+
+fun loadLocalProperties(): Properties {
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(localPropertiesFile.inputStream())
+    }
+    return localProperties
 }

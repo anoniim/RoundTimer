@@ -1,0 +1,28 @@
+# Gradle build outputs
+/build/
+/.gradle/
+
+# Compiled class files
+*.class
+
+# IntelliJ IDEA files
+/.idea/
+*.iml
+*.iws
+
+# Eclipse files
+/.project
+/.classpath
+/.settings/
+
+# VS Code files
+/.vscode/
+
+# macOS files
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~.nib

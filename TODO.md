@@ -1,3 +1,2 @@
-- Move history out of TimerState
-- History sheet must scroll (e.g. in desktop/landscape)
-- Desktop: Elevation shadow clipped
+- Add confirmation before deleting rounds and games
+- Add swipe to delete to games
