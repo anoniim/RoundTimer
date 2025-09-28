@@ -61,68 +61,67 @@ fun ConfigurationScreen(
             }
         }
     ) { paddingValues ->
-        Box(Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.background,
+                        )
+                    )
+                )
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
             if (isLandscape) {
                 GameInfo(games, activeGameId, Modifier.align(Alignment.TopStart).padding(32.dp).padding(top = 16.dp))
             }
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.surface,
-                                MaterialTheme.colorScheme.background,
-                            )
-                        )
-                    )
-                    .padding(paddingValues),
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                BoxWithConstraints(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 0.9f
-                    // Centered StyledCard with scrollable dial
-                    StyledCard(
-                        modifier = Modifier.size(cardSize),
-                        verticalArrangement = Arrangement.Top,
-                        content = {
-                            // Scrollable dial for time selection
-                            ScrollableDial(
-                                currentSeconds = state.configuredSeconds,
-                                onValueChange = onTimeChanged,
-                                formatTime = formatTime,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .heightIn(min = 200.dp)
+                val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 0.9f
+                // Centered StyledCard with scrollable dial
+                StyledCard(
+                    modifier = Modifier.size(cardSize),
+                    verticalArrangement = Arrangement.Top,
+                    content = {
+                        // Scrollable dial for time selection
+                        ScrollableDial(
+                            currentSeconds = state.configuredSeconds,
+                            onValueChange = onTimeChanged,
+                            formatTime = formatTime,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .heightIn(min = 200.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Start button
+                        Button(
+                            onClick = onStartTimer,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(40.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                        ) {
+                            Text(
+                                text = "START",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
-
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            // Start button
-                            Button(
-                                onClick = onStartTimer,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
-                                shape = RoundedCornerShape(40.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                ),
-                            ) {
-                                Text(
-                                    text = "START",
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    )
-                }
+                        }
+                    },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                )
             }
         }
     }
