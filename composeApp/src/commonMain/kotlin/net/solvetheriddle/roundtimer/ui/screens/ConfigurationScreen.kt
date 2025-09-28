@@ -49,7 +49,8 @@ fun ConfigurationScreen(
         floatingActionButton = {
             Row(
                 modifier = Modifier.fillMaxWidth()
-                    .padding(start = 32.dp),
+                    .padding(start = 32.dp)
+                    .padding(horizontal = if (isLandscape) 96.dp else 0.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -76,7 +77,7 @@ fun ConfigurationScreen(
             contentAlignment = Alignment.Center
         ) {
             if (isLandscape) {
-                GameInfo(games, activeGameId, Modifier.align(Alignment.TopStart).padding(32.dp).padding(top = 16.dp))
+                GameInfo(games, activeGameId, Modifier.align(Alignment.TopStart).padding(32.dp).padding(start = 84.dp, top = 16.dp))
             }
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize(),
