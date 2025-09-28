@@ -153,7 +153,7 @@ compose.desktop {
             packageName = "net.solvetheriddle.roundtimer"
 
             val gitVersion = getGitVersionName()
-            packageVersion = gitVersion.split("+")[0].split("-")[0]
+            packageVersion = if (gitVersion == "snapshot") "1.0.0" else gitVersion.split("+")[0]
         }
     }
 }
