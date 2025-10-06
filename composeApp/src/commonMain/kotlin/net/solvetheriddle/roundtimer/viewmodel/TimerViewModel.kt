@@ -20,8 +20,11 @@ import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
+import net.solvetheriddle.roundtimer.audio.AudioScheduler
 import net.solvetheriddle.roundtimer.model.AudioCue
+import net.solvetheriddle.roundtimer.model.AudioPattern
 import net.solvetheriddle.roundtimer.model.Game
+import net.solvetheriddle.roundtimer.model.ScheduledSound
 import net.solvetheriddle.roundtimer.model.Sound
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
@@ -31,6 +34,7 @@ import net.solvetheriddle.roundtimer.platform.getAnalyticsService
 import net.solvetheriddle.roundtimer.storage.RoundTimerStorage
 import net.solvetheriddle.roundtimer.storage.createPlatformStorage
 import kotlin.time.ExperimentalTime
+import kotlin.time.TimeSource
 
 private const val UPDATE_INTERVAL = 50L
 
@@ -42,6 +46,7 @@ class TimerViewModel : ViewModel() {
     private val soundPlayer by lazy { getSoundPlayer() }
     private val screenLocker by lazy { getScreenLocker() }
     private val analyticsService by lazy { getAnalyticsService() }
+    private val audioScheduler by lazy { AudioScheduler(soundPlayer, viewModelScope) }
     private val _state = MutableStateFlow(TimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
 
@@ -72,7 +77,9 @@ class TimerViewModel : ViewModel() {
     }
 
     private var timerJob: Job? = null
-    private var audioJob: Job? = null
+    private var timerStartTime: TimeSource.Monotonic.ValueTimeMark? = null
+    private var initialTimerDuration: Long = 0L
+    private var fastForwardOffset: Long = 0L
 
     // Audio cue configuration as per README
     private val audioCues = listOf(
@@ -81,7 +88,6 @@ class TimerViewModel : ViewModel() {
         AudioCue(threshold = 40, sound = Sound.CALL),
         AudioCue(threshold = 36, sound = Sound.INTENSE),
         AudioCue(threshold = 19, sound = Sound.INTENSE),
-        AudioCue(threshold = 0, sound = Sound.OVERTIME),
     )
 
     fun updateConfiguredTime(seconds: Int) {
@@ -132,83 +138,129 @@ class TimerViewModel : ViewModel() {
             isRunning = true,
             currentTime = currentState.configuredTime,
             overtimeTime = 0L,
-            isOvertime = false
+            isOvertime = false,
+            startTimestamp = Clock.System.now().toEpochMilliseconds()
         )
         analyticsService.logEvent(
             "timer_started", mapOf("game_id" to currentState.activeGameId!!, "configured_time" to currentState.configuredTime.toString())
         )
 
-        startCountdown()
+        startCountdownWithPreciseAudio()
     }
 
-    private fun startCountdown() {
+    @OptIn(ExperimentalTime::class)
+    private fun startCountdownWithPreciseAudio() {
+        val configuredTime = _state.value.configuredTime
+        initialTimerDuration = configuredTime
+        timerStartTime = TimeSource.Monotonic.markNow()
+        fastForwardOffset = 0L
+
+        // Pre-calculate all scheduled audio events
+        val audioEvents = createAudioSchedule(configuredTime)
+
+        // Start the precise audio scheduler
+        audioScheduler.start(configuredTime, audioEvents)
+
+        // Start the UI update timer using the same time source
+        startSynchronizedCountdown()
+    }
+
+    private fun createAudioSchedule(timerDurationMs: Long): List<ScheduledSound> {
+        val events = mutableListOf<ScheduledSound>()
+
+        // Add regular countdown cues
+        audioCues.forEach { cue ->
+            val triggerTimeMs = timerDurationMs - (cue.threshold * 1000L)
+            if (triggerTimeMs >= 0) {
+                events.add(ScheduledSound(triggerTimeMs, cue.sound, cue.pattern))
+            }
+        }
+
+        // Add overtime sound schedule
+        val overtimeCues = createOvertimeSchedule(timerDurationMs)
+        events.addAll(overtimeCues)
+
+        return events.sortedBy { it.triggerTimeMs }
+    }
+
+    /**
+     * Creates a schedule of overtime sounds that play after the timer expires.
+     * You can customize this pattern based on your needs.
+     */
+    private fun createOvertimeSchedule(timerDurationMs: Long): List<ScheduledSound> {
+        val overtimeEvents = mutableListOf<ScheduledSound>()
+
+        // Play OVERTIME sound every second for the first 11 seconds of overtime
+        repeat(8) { seconds ->
+            val triggerTime = timerDurationMs + (seconds * 1000L)
+            overtimeEvents.add(ScheduledSound(triggerTime, Sound.OVERTIME))
+        }
+
+        val overtimeCalls = listOf(
+            Sound.OVERTIME_CALL1,
+            Sound.OVERTIME_CALL1,
+            Sound.OVERTIME_CALL2,
+            Sound.OVERTIME_CALL2,
+            Sound.OVERTIME_CALL3,
+            Sound.OVERTIME_CALL3,
+            Sound.OVERTIME_CALL4,
+            Sound.OVERTIME_CALL5,
+            Sound.OVERTIME_CALL6,
+        )
+        overtimeEvents.add(ScheduledSound(timerDurationMs + (8 * 1000L), overtimeCalls.random()))
+
+        // Then every 5 seconds for the next 2 minutes
+        for (seconds in 14 until 150 step 3) {
+            val triggerTime = timerDurationMs + (seconds * 800L)
+            overtimeEvents.add(ScheduledSound(triggerTime, Sound.OVERTIME))
+        }
+
+        return overtimeEvents
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private fun startSynchronizedCountdown() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (_state.value.isRunning) {
                 delay(UPDATE_INTERVAL)
 
                 val currentState = _state.value
-                if (currentState.currentTime > 0) {
-                    // Normal countdown
-                    val newTime = maxOf(0L, currentState.currentTime - UPDATE_INTERVAL)
-                    _state.value = currentState.copy(currentTime = newTime)
+                val elapsedTime = (timerStartTime?.elapsedNow()?.inWholeMilliseconds ?: 0L) + fastForwardOffset
 
-                    // Handle audio cues (check every 100ms but only trigger on second boundaries)
-                    val currentSeconds = (newTime / 1000).toInt()
-                    val previousSeconds = (currentState.currentTime / 1000).toInt()
-                    if (currentSeconds != previousSeconds) {
-                        handleAudioCues(currentSeconds)
-                    }
+                if (elapsedTime < initialTimerDuration) {
+                    // Normal countdown - calculate remaining time based on elapsed time
+                    val remainingTime = maxOf(0L, initialTimerDuration - elapsedTime)
+                    _state.value = currentState.copy(currentTime = remainingTime)
                 } else {
-                    // Overtime mode
+                    // Overtime mode - calculate overtime based on elapsed time
+                    val overtimeTime = elapsedTime - initialTimerDuration
                     _state.value = currentState.copy(
+                        currentTime = 0L,
                         isOvertime = true,
-                        overtimeTime = currentState.overtimeTime + UPDATE_INTERVAL
+                        overtimeTime = overtimeTime
                     )
-                    val currentSeconds = _state.value.overtimeSeconds
-                    val previousSeconds = currentState.overtimeSeconds
-                    if (currentSeconds != previousSeconds) {
-                        playSound(Sound.OVERTIME)
-                    }
                 }
             }
         }
-    }
-
-    private suspend fun handleAudioCues(remainingSeconds: Int) {
-        val applicableCue = audioCues.find { it.threshold == remainingSeconds }
-        applicableCue?.let { cue ->
-            playSound(cue.sound)
-            when {
-                cue.sound == Sound.DUM && (remainingSeconds == 50 || remainingSeconds == 40) -> {
-                    delay(500)
-                    playSound(cue.sound)
-                }
-            }
-        }
-    }
-
-    private fun playSound(soundName: Sound) {
-        soundPlayer.playSound(soundName)
     }
 
     @OptIn(ExperimentalTime::class)
     fun stopTimer() {
         screenLocker.unlock()
         timerJob?.cancel()
-        audioJob?.cancel()
-        soundPlayer.stopSound()
+        audioScheduler.stop()
 
         val currentState = _state.value
         if (currentState.isRunning) {
             // Save round to history
-            val currentTime = Clock.System.now().toEpochMilliseconds()
+            val roundTimestamp = currentState.startTimestamp ?: Clock.System.now().toEpochMilliseconds()
             val durationSeconds = ((currentState.configuredTime - currentState.currentTime + currentState.overtimeTime) / 1000).toInt()
             val round = Round(
-                id = currentTime.toString(),
+                id = roundTimestamp.toString(),
                 duration = durationSeconds,
                 overtime = currentState.overtimeSeconds,
-                timestamp = currentTime,
+                timestamp = roundTimestamp,
                 gameId = currentState.activeGameId!!
             )
 
@@ -280,6 +332,38 @@ class TimerViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Fast forward the timer by the specified number of seconds.
+     * This will immediately advance the timer state and trigger any audio cues
+     * that should have played during the skipped time.
+     */
+    fun fastForward(seconds: Int) {
+        if (!_state.value.isRunning || seconds <= 0) {
+            return
+        }
+        
+        val fastForwardMs = seconds * 1000L
+        val currentState = _state.value
+        
+        // Update the fast forward offset for UI synchronization
+        fastForwardOffset += fastForwardMs
+        
+        // Fast forward the audio scheduler
+        audioScheduler.fastForward(fastForwardMs)
+        
+        // The UI will automatically update on the next interval using the synchronized timing
+        // with the updated fastForwardOffset
+        
+        analyticsService.logEvent(
+            "timer_fast_forwarded", 
+            mapOf(
+                "game_id" to (currentState.activeGameId ?: ""),
+                "seconds_forwarded" to seconds.toString(),
+                "was_overtime" to currentState.isOvertime.toString()
+            )
+        )
+    }
+
     fun createNewGame(name: String = "") {
         val newGame = Game(id = Clock.System.now().toEpochMilliseconds().toString(), date = getCurrentDate(), name = name)
         val newGames = (_state.value.games + newGame).sortedByDescending { it.id }
@@ -333,6 +417,6 @@ class TimerViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
-        audioJob?.cancel()
+        audioScheduler.stop()
     }
 }

@@ -63,6 +63,7 @@ fun App() {
                             viewModel.stopTimer()
                             currentScreenRoute = Screen.Configuration.route
                         },
+                        fastForward = { viewModel.fastForward(10) },
                         formatTime = viewModel::formatTime
                     )
                 }

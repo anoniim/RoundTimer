@@ -407,7 +407,7 @@ private fun RoundItem(
                 )
                 
                 Text(
-                    text = formatTimestamp(round.timestamp),
+                    text = "at ${formatTimestamp(round.timestamp)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

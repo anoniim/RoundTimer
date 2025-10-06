@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import net.solvetheriddle.roundtimer.model.TimerState
 import net.solvetheriddle.roundtimer.platform.getStatusBarManager
 import net.solvetheriddle.roundtimer.ui.components.StyledCard
@@ -33,6 +34,7 @@ import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 fun ActiveTimerScreen(
     state: TimerState,
     onStopTimer: () -> Unit,
+    fastForward: () -> Unit,
     formatTime: (Int) -> String
 ) {
     // Set status bar to dark content for light mode
@@ -41,7 +43,7 @@ fun ActiveTimerScreen(
         try {
             getStatusBarManager().setStatusBarStyle(isDarkContent = !isDarkTheme)
         } catch (e: Exception) {
-            // Handle platforms that don't support status bar styling
+            println("! This platform doesn't support status bar styling")
         }
     }
     // Pulse animation for overtime
@@ -69,8 +71,8 @@ fun ActiveTimerScreen(
 
     val activeColor = when {
         state.isOvertime -> RedBackground // Red for overtime
-        state.currentSeconds <= 36 -> RedBackground // Red
-        state.currentSeconds <= 60 -> OrangeBackground // Orange
+        state.currentSeconds <= 35 -> RedBackground // Red
+        state.currentSeconds <= 59 -> OrangeBackground // Orange
         else -> GreenBackground // Green
     }
     // Determine background color based on remaining time
@@ -132,8 +134,9 @@ fun ActiveTimerScreen(
             size = boxWidth,
             content = {
                 // Main countdown display
+                val displayTime = if (!state.isOvertime) state.currentSeconds + 1 else 0
                 Text(
-                    text = formatTime(state.currentSeconds),
+                    text = formatTime(displayTime),
                     fontSize = 96.sp, // Extra large as per README (8xl equivalent)
                     fontWeight = FontWeight.ExtraBold,
                     color = animatedBackgroundColor,
@@ -164,6 +167,11 @@ fun ActiveTimerScreen(
                 )
             },
             colors = CardDefaults.cardColors(containerColor = animatedBoxColor)
+        )
+        Box(
+            Modifier.fillMaxWidth()
+                .height(100.dp)
+                .clickable(onClick = fastForward)
         )
     }
 }
