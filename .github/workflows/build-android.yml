@@ -100,7 +100,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
           packageName: net.solvetheriddle.roundtimer
-          releaseFiles: app-release.aab
+          releaseFiles: composeApp-release.aab
           track: ${{ env.publishing_track }}
           status: draft
           whatsNewDirectory: releaseNotes # FIXME: Release notes not published (bug in the plugin?)
