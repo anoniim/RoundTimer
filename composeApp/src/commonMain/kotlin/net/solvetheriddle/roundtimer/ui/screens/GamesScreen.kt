@@ -33,6 +33,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -41,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +58,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.TimerState
 import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
@@ -68,12 +73,16 @@ fun GamesScreen(
     onSetActiveGame: (String) -> Unit,
     onUpdateGameName: (String, String) -> Unit,
     onDeleteGame: (String) -> Unit,
+    onUndoDelete: () -> Unit,
     onGameSelected: () -> Unit,
     formatTime: (Int) -> String
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
     var gameToEdit by remember { mutableStateOf<Game?>(null) }
     var showNewGameDialog by remember { mutableStateOf(false) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     if (showEditDialog && gameToEdit != null) {
         EditGameNameDialog(
@@ -86,6 +95,15 @@ fun GamesScreen(
             onDelete = {
                 onDeleteGame(gameToEdit!!.id)
                 showEditDialog = false
+                scope.launch {
+                    val result = snackbarHostState.showSnackbar(
+                        message = "Game deleted",
+                        actionLabel = "Undo"
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        onUndoDelete()
+                    }
+                }
             }
         )
     }
@@ -104,6 +122,7 @@ fun GamesScreen(
     val isLandscape = rememberIsLandscape()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Games") },

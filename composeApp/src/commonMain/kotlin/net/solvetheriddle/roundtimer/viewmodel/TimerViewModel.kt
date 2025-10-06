@@ -81,6 +81,9 @@ class TimerViewModel : ViewModel() {
     private var initialTimerDuration: Long = 0L
     private var fastForwardOffset: Long = 0L
 
+    private var deletedRound: Round? = null
+    private var deletedGame: Game? = null
+
     fun updateConfiguredTime(seconds: Int) {
         if (!_state.value.isRunning) {
             val milliseconds = seconds * 1000L
@@ -306,6 +309,7 @@ class TimerViewModel : ViewModel() {
 
     fun deleteRound(roundId: String) {
         val currentState = _state.value
+        deletedRound = currentState.rounds.find { it.id == roundId }
         val newRounds = currentState.rounds.filter { it.id != roundId }
         _state.value = currentState.copy(rounds = newRounds)
         analyticsService.logEvent("round_deleted", mapOf("round_id" to roundId, "game_id" to currentState.activeGameId!!))
@@ -314,6 +318,16 @@ class TimerViewModel : ViewModel() {
                 storage.saveRounds(newRounds)
             } catch (e: Exception) {
                 // Storage save failed, but continue with UI update
+            }
+        }
+    }
+
+    fun undoDeleteRound() {
+        deletedRound?.let {
+            val newRounds = (_state.value.rounds + it).sortedBy { it.timestamp }
+            _state.value = _state.value.copy(rounds = newRounds)
+            viewModelScope.launch {
+                storage.saveRounds(newRounds)
             }
         }
     }
@@ -444,6 +458,7 @@ class TimerViewModel : ViewModel() {
 
     fun deleteGame(gameId: String) {
         val currentState = _state.value
+        deletedGame = currentState.games.find { it.id == gameId }
         val newGames = currentState.games.filter { it.id != gameId }.sortedByDescending { it.id }
         val newActiveGameId = if (currentState.activeGameId == gameId) {
             newGames.firstOrNull()?.id
@@ -455,6 +470,16 @@ class TimerViewModel : ViewModel() {
         viewModelScope.launch {
             storage.saveGames(newGames)
             storage.saveActiveGameId(newActiveGameId)
+        }
+    }
+
+    fun undoDeleteGame() {
+        deletedGame?.let {
+            val newGames = (_state.value.games + it).sortedByDescending { it.id }
+            _state.value = _state.value.copy(games = newGames)
+            viewModelScope.launch {
+                storage.saveGames(newGames)
+            }
         }
     }
 

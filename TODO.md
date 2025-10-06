@@ -1,2 +1,1 @@
-- Add confirmation before deleting rounds and games
-- Add swipe to delete to games
+

@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import net.solvetheriddle.roundtimer.model.Round
@@ -47,10 +48,14 @@ fun HistoryScreen(
     state: TimerState,
     onNavigateUp: () -> Unit,
     onDeleteRound: (String) -> Unit,
+    onUndoDelete: () -> Unit,
     onResetHistory: (String) -> Unit,
     formatTime: (Int) -> String
 ) {
     val filteredRounds = state.rounds.filter { it.gameId == state.activeGameId }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     // Calculate statistics
     val totalRounds = filteredRounds.size
@@ -61,6 +66,7 @@ fun HistoryScreen(
     val isLandscape = rememberIsLandscape()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Round History") },
@@ -206,7 +212,18 @@ fun HistoryScreen(
                                         SwipeableRoundItem(
                                             round = round,
                                             roundNumber = state.rounds.indexOf(round) + 1,
-                                            onDelete = { onDeleteRound(round.id) },
+                                            onDelete = { 
+                                                onDeleteRound(round.id)
+                                                scope.launch {
+                                                    val result = snackbarHostState.showSnackbar(
+                                                        message = "Round deleted",
+                                                        actionLabel = "Undo"
+                                                    )
+                                                    if (result == SnackbarResult.ActionPerformed) {
+                                                        onUndoDelete()
+                                                    }
+                                                }
+                                            },
                                             formatTime = formatTime
                                         )
                                     }
@@ -269,7 +286,18 @@ fun HistoryScreen(
                             SwipeableRoundItem(
                                 round = round,
                                 roundNumber = state.rounds.indexOf(round) + 1,
-                                onDelete = { onDeleteRound(round.id) },
+                                onDelete = { 
+                                    onDeleteRound(round.id)
+                                    scope.launch {
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = "Round deleted",
+                                            actionLabel = "Undo"
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            onUndoDelete()
+                                        }
+                                    }
+                                },
                                 formatTime = formatTime
                             )
                         }

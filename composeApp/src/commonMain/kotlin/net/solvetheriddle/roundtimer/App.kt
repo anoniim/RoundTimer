@@ -76,6 +76,7 @@ fun App() {
                         state = state,
                         onNavigateUp = { currentScreenRoute = Screen.Configuration.route },
                         onDeleteRound = viewModel::deleteRound,
+                        onUndoDelete = viewModel::undoDeleteRound,
                         onResetHistory = viewModel::resetHistoryForGame,
                         formatTime = viewModel::formatTime
                     )
@@ -91,6 +92,7 @@ fun App() {
                         onSetActiveGame = viewModel::setActiveGame,
                         onUpdateGameName = viewModel::updateGameName,
                         onDeleteGame = viewModel::deleteGame,
+                        onUndoDelete = viewModel::undoDeleteGame,
                         onGameSelected = { currentScreenRoute = Screen.Configuration.route },
                         formatTime = viewModel::formatTime
                     )
