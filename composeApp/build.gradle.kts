@@ -98,11 +98,6 @@ android {
         applicationId = "net.solvetheriddle.roundtimer"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        // App version
-        versionCode = project.getGitVersionCode()
-        println("Version code: $versionCode")
-        versionName = project.getGitVersionName()
-        println("Version name: $versionName")
     }
     packaging {
         resources {
@@ -139,6 +134,17 @@ android {
     }
 }
 
+androidComponents {
+    onVariants {
+        val versionCodeProvider = project.getGitVersionCodeProvider()
+        val versionNameProvider = project.getGitVersionNameProvider()
+        it.outputs.forEach { output ->
+            output.versionCode.set(versionCodeProvider)
+            output.versionName.set(versionNameProvider)
+        }
+    }
+}
+
 dependencies {
     implementation(platform(libs.firebase.bom))
     debugImplementation(compose.uiTooling)
@@ -152,7 +158,7 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "net.solvetheriddle.roundtimer"
 
-            val gitVersion = getGitVersionName()
+            val gitVersion = getGitVersionNameProvider().get()
             packageVersion = if (gitVersion == "snapshot") "1.0.0" else gitVersion.split("+")[0]
         }
     }

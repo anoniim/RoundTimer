@@ -30,6 +30,7 @@ node_modules/
 /.idea/inspectionProfiles/Project_Default.xml
 /.idea/vcs.xml
 *.keystore
+TODO.md
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
@@ -39,7 +40,7 @@ fun ConfigurationScreen(
         try {
             getStatusBarManager().setStatusBarStyle(isDarkContent = true)
         } catch (e: Exception) {
-            // Handle platforms that don't support status bar styling
+            println("! This platform doesn't support status bar styling")
         }
     }
     val isLandscape = rememberIsLandscape()
@@ -163,7 +164,7 @@ private fun GamesButton(onGamesClick: () -> Unit) {
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
         Icon(
-            imageVector = Icons.Filled.List,
+            imageVector = Icons.AutoMirrored.Default.List,
             contentDescription = "Games"
         )
     }
