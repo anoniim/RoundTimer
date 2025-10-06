@@ -32,6 +32,7 @@ enum class Sound(val fileName: String) {
     CALL("call.wav"),
     ALMOST("almost.wav"),
     INTENSE("intense.wav"),
+    TIMEOUT_GONG("timeout_gong.wav"),
     OVERTIME("overtime_beat_alarm.wav"),
     OVERTIME_CALL1("overtime_cas_vyprsel.wav"),
     OVERTIME_CALL2("overtime_jone_jedem.wav"),

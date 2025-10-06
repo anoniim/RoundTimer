@@ -71,7 +71,7 @@ fun ActiveTimerScreen(
 
     val activeColor = when {
         state.isOvertime -> RedBackground // Red for overtime
-        state.currentSeconds <= 35 -> RedBackground // Red
+        state.currentSeconds <= 20 -> RedBackground // Red
         state.currentSeconds <= 59 -> OrangeBackground // Orange
         else -> GreenBackground // Green
     }
@@ -102,6 +102,11 @@ fun ActiveTimerScreen(
         // Progress fill background
         Box(
             modifier = Modifier.fillMaxSize()
+                .clickable(
+                    onClick = fastForward,
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                )
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
@@ -167,11 +172,6 @@ fun ActiveTimerScreen(
                 )
             },
             colors = CardDefaults.cardColors(containerColor = animatedBoxColor)
-        )
-        Box(
-            Modifier.fillMaxWidth()
-                .height(100.dp)
-                .clickable(onClick = fastForward)
         )
     }
 }

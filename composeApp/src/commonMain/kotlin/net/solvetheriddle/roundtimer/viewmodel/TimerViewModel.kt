@@ -13,11 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format
 import kotlinx.datetime.format.DayOfWeekNames
 import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.Padding
-import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
 import net.solvetheriddle.roundtimer.audio.AudioScheduler
@@ -60,12 +58,14 @@ class TimerViewModel : ViewModel() {
                     val configuredTime = storage.loadConfiguredTime() ?: _state.value.configuredTime
                     val games = storage.loadGames().sortedByDescending { it.id }
                     val activeGameId = storage.loadActiveGameId() ?: games.firstOrNull()?.id
+                    val savedSettings = storage.loadSettings() ?: _state.value.settings
                     _state.value = _state.value.copy(
                         rounds = savedRounds,
                         configuredTime = configuredTime,
                         currentTime = configuredTime,
                         games = games,
-                        activeGameId = activeGameId
+                        activeGameId = activeGameId,
+                        settings = savedSettings
                     )
                 } catch (e: Exception) {
                     // Continue with empty list
@@ -80,15 +80,6 @@ class TimerViewModel : ViewModel() {
     private var timerStartTime: TimeSource.Monotonic.ValueTimeMark? = null
     private var initialTimerDuration: Long = 0L
     private var fastForwardOffset: Long = 0L
-
-    // Audio cue configuration as per README
-    private val audioCues = listOf(
-        AudioCue(threshold = 60, sound = Sound.CALL),
-        AudioCue(threshold = 50, sound = Sound.CALL),
-        AudioCue(threshold = 40, sound = Sound.CALL),
-        AudioCue(threshold = 36, sound = Sound.INTENSE),
-        AudioCue(threshold = 19, sound = Sound.INTENSE),
-    )
 
     fun updateConfiguredTime(seconds: Int) {
         if (!_state.value.isRunning) {
@@ -167,8 +158,7 @@ class TimerViewModel : ViewModel() {
 
     private fun createAudioSchedule(timerDurationMs: Long): List<ScheduledSound> {
         val events = mutableListOf<ScheduledSound>()
-
-        // Add regular countdown cues
+        val audioCues = generateAudioCues()
         audioCues.forEach { cue ->
             val triggerTimeMs = timerDurationMs - (cue.threshold * 1000L)
             if (triggerTimeMs >= 0) {
@@ -183,6 +173,28 @@ class TimerViewModel : ViewModel() {
         return events.sortedBy { it.triggerTimeMs }
     }
 
+    private fun generateAudioCues(): List<AudioCue> {
+        val settings = _state.value.settings
+        val audioCues = mutableListOf<AudioCue>()
+        if (settings.isSubtleDrummingEnabled) {
+            val subtleDrumRepeatCount = if (settings.isIntenseDrummingEnabled) 4 else 6
+            audioCues.add(
+                AudioCue(threshold = 60, sound = Sound.CALL, pattern = AudioPattern.Repeated(subtleDrumRepeatCount, 10 * 1000L))
+            )
+        }
+        if (settings.isIntenseDrummingEnabled) {
+            audioCues.add(
+                AudioCue(threshold = 21, sound = Sound.INTENSE)
+            )
+        }
+        if (settings.isTimeoutGongEnabled) {
+            audioCues.add(
+                AudioCue(threshold = 0, sound = Sound.TIMEOUT_GONG)
+            )
+        }
+        return audioCues
+    }
+
     /**
      * Creates a schedule of overtime sounds that play after the timer expires.
      * You can customize this pattern based on your needs.
@@ -190,29 +202,30 @@ class TimerViewModel : ViewModel() {
     private fun createOvertimeSchedule(timerDurationMs: Long): List<ScheduledSound> {
         val overtimeEvents = mutableListOf<ScheduledSound>()
 
-        // Play OVERTIME sound every second for the first 11 seconds of overtime
-        repeat(8) { seconds ->
-            val triggerTime = timerDurationMs + (seconds * 1000L)
-            overtimeEvents.add(ScheduledSound(triggerTime, Sound.OVERTIME))
+        val settings = _state.value.settings
+        if (settings.isOvertimeAlarmEnabled) {
+            repeat(8) { seconds ->
+                val triggerTime = timerDurationMs + (seconds * 1000L)
+                overtimeEvents.add(ScheduledSound(triggerTime, Sound.OVERTIME))
+            }
+            for (seconds in 14 until 150 step 3) {
+                val triggerTime = timerDurationMs + (seconds * 800L)
+                overtimeEvents.add(ScheduledSound(triggerTime, Sound.OVERTIME))
+            }
         }
-
-        val overtimeCalls = listOf(
-            Sound.OVERTIME_CALL1,
-            Sound.OVERTIME_CALL1,
-            Sound.OVERTIME_CALL2,
-            Sound.OVERTIME_CALL2,
-            Sound.OVERTIME_CALL3,
-            Sound.OVERTIME_CALL3,
-            Sound.OVERTIME_CALL4,
-            Sound.OVERTIME_CALL5,
-            Sound.OVERTIME_CALL6,
-        )
-        overtimeEvents.add(ScheduledSound(timerDurationMs + (8 * 1000L), overtimeCalls.random()))
-
-        // Then every 5 seconds for the next 2 minutes
-        for (seconds in 14 until 150 step 3) {
-            val triggerTime = timerDurationMs + (seconds * 800L)
-            overtimeEvents.add(ScheduledSound(triggerTime, Sound.OVERTIME))
+        if (settings.isJonasScoldingEnabled) {
+            val overtimeCalls = listOf(
+                Sound.OVERTIME_CALL1,
+                Sound.OVERTIME_CALL1,
+                Sound.OVERTIME_CALL2,
+                Sound.OVERTIME_CALL2,
+                Sound.OVERTIME_CALL3,
+                Sound.OVERTIME_CALL3,
+                Sound.OVERTIME_CALL4,
+                Sound.OVERTIME_CALL5,
+                Sound.OVERTIME_CALL6,
+            )
+            overtimeEvents.add(ScheduledSound(timerDurationMs + (8 * 1000L), overtimeCalls.random()))
         }
 
         return overtimeEvents
@@ -338,24 +351,24 @@ class TimerViewModel : ViewModel() {
      * that should have played during the skipped time.
      */
     fun fastForward(seconds: Int) {
-        if (!_state.value.isRunning || seconds <= 0) {
+        if (!_state.value.isRunning || seconds <= 0 || !_state.value.settings.isSecretFastForwardEnabled) {
             return
         }
-        
+
         val fastForwardMs = seconds * 1000L
         val currentState = _state.value
-        
+
         // Update the fast forward offset for UI synchronization
         fastForwardOffset += fastForwardMs
-        
+
         // Fast forward the audio scheduler
         audioScheduler.fastForward(fastForwardMs)
-        
+
         // The UI will automatically update on the next interval using the synchronized timing
         // with the updated fastForwardOffset
-        
+
         analyticsService.logEvent(
-            "timer_fast_forwarded", 
+            "timer_fast_forwarded",
             mapOf(
                 "game_id" to (currentState.activeGameId ?: ""),
                 "seconds_forwarded" to seconds.toString(),
@@ -395,6 +408,37 @@ class TimerViewModel : ViewModel() {
         analyticsService.logEvent("game_name_updated", mapOf("game_id" to gameId, "new_name" to name))
         viewModelScope.launch {
             storage.saveGames(updatedGames)
+        }
+    }
+
+    fun updateSetting(settingName: String, isEnabled: Boolean) {
+        val currentSettings = _state.value.settings
+        val newSettings = when (settingName) {
+            "subtleDrumming" -> currentSettings.copy(isSubtleDrummingEnabled = isEnabled)
+            "intenseDrumming" -> currentSettings.copy(isIntenseDrummingEnabled = isEnabled)
+            "overtimeAlarm" -> {
+                if (isEnabled) {
+                    currentSettings.copy(isOvertimeAlarmEnabled = true, isTimeoutGongEnabled = false)
+                } else {
+                    currentSettings.copy(isOvertimeAlarmEnabled = false)
+                }
+            }
+            "timeoutGong" -> {
+                if (isEnabled) {
+                    currentSettings.copy(isTimeoutGongEnabled = true, isOvertimeAlarmEnabled = false)
+                } else {
+                    currentSettings.copy(isTimeoutGongEnabled = false)
+                }
+            }
+            "jonasScolding" -> currentSettings.copy(isJonasScoldingEnabled = isEnabled)
+            "secretFastForward" -> currentSettings.copy(isSecretFastForwardEnabled = isEnabled)
+            else -> currentSettings
+        }
+        if (newSettings != currentSettings) {
+            _state.value = _state.value.copy(settings = newSettings)
+            viewModelScope.launch {
+                storage.saveSettings(newSettings)
+            }
         }
     }
 

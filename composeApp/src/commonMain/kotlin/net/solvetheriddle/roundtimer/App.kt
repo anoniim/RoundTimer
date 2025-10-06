@@ -16,6 +16,7 @@ import net.solvetheriddle.roundtimer.ui.screens.ActiveTimerScreen
 import net.solvetheriddle.roundtimer.ui.screens.ConfigurationScreen
 import net.solvetheriddle.roundtimer.ui.screens.GamesScreen
 import net.solvetheriddle.roundtimer.ui.screens.HistoryScreen
+import net.solvetheriddle.roundtimer.ui.screens.SettingsScreen
 import net.solvetheriddle.roundtimer.viewmodel.TimerViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -31,6 +32,9 @@ fun App() {
             when (currentScreenRoute) {
                 Screen.History.route, Screen.Games.route -> {
                     currentScreenRoute = Screen.Configuration.route
+                }
+                Screen.Settings.route -> {
+                    currentScreenRoute = Screen.Games.route
                 }
                 Screen.ActiveTimer.route -> {
                     viewModel.stopTimer()
@@ -80,6 +84,7 @@ fun App() {
                     GamesScreen(
                         state = state,
                         onNavigateUp = { currentScreenRoute = Screen.Configuration.route },
+                        onNavigateToSettings = { currentScreenRoute = Screen.Settings.route },
                         onCreateNewGame = { name ->
                             viewModel.createNewGame(name)
                         },
@@ -88,6 +93,13 @@ fun App() {
                         onDeleteGame = viewModel::deleteGame,
                         onGameSelected = { currentScreenRoute = Screen.Configuration.route },
                         formatTime = viewModel::formatTime
+                    )
+                }
+                Screen.Settings.route -> {
+                    SettingsScreen(
+                        settingsState = state.settings,
+                        onNavigateUp = { currentScreenRoute = Screen.Games.route },
+                        onSettingChanged = viewModel::updateSetting
                     )
                 }
             }
@@ -109,4 +121,5 @@ sealed class Screen(val route: String) {
     data object ActiveTimer : Screen("active_timer")
     data object History : Screen("history")
     data object Games : Screen("games")
+    data object Settings : Screen("settings")
 }

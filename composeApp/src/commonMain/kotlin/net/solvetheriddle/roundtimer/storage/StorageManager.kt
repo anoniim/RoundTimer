@@ -9,6 +9,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.Round
+import net.solvetheriddle.roundtimer.model.SettingsState
 
 /**
  * Cross-platform storage manager for Round data with persistent storage.
@@ -30,6 +31,7 @@ class RoundTimerStorage(
         private const val GAMES_KEY = "games_data"
         private const val CONFIGURED_TIME_KEY = "configured_time"
         private const val ACTIVE_GAME_ID_KEY = "active_game_id"
+        private const val SETTINGS_KEY = "settings_data"
         private const val VERSION_KEY = "storage_version"
         private const val CURRENT_VERSION = "1.0"
     }
@@ -141,6 +143,34 @@ class RoundTimerStorage(
     suspend fun loadActiveGameId(): String? {
         return try {
             platformStorage.loadString(ACTIVE_GAME_ID_KEY)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Save settings to persistent storage
+     */
+    suspend fun saveSettings(settings: SettingsState) {
+        try {
+            val jsonString = json.encodeToString(settings)
+            platformStorage.saveString(SETTINGS_KEY, jsonString)
+        } catch (e: Exception) {
+            throw StorageException("Failed to save settings", e)
+        }
+    }
+
+    /**
+     * Load settings from persistent storage
+     */
+    suspend fun loadSettings(): SettingsState? {
+        return try {
+            val jsonString = platformStorage.loadString(SETTINGS_KEY)
+            if (jsonString != null) {
+                json.decodeFromString<SettingsState>(jsonString)
+            } else {
+                null
+            }
         } catch (e: Exception) {
             null
         }

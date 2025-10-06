@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,6 +63,7 @@ import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 fun GamesScreen(
     state: TimerState,
     onNavigateUp: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onCreateNewGame: (String) -> Unit,
     onSetActiveGame: (String) -> Unit,
     onUpdateGameName: (String, String) -> Unit,
@@ -108,6 +110,14 @@ fun GamesScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = onNavigateToSettings,
+                        modifier = if (isLandscape) Modifier.padding(end = 80.dp) else Modifier
+                    ) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

@@ -6,9 +6,11 @@ data class TimerState(
     val overtimeTime: Long = 0L,           // Overtime counter in milliseconds
     val isRunning: Boolean = false,        // Timer active state
     val isOvertime: Boolean = false,       // Overtime mode flag
+    val startTimestamp: Long? = null,      // When the timer was started (epoch millis)
     val rounds: List<Round> = emptyList(),  // Historical rounds array
     val games: List<Game> = emptyList(),
-    val activeGameId: String? = null
+    val activeGameId: String? = null,
+    val settings: SettingsState = SettingsState()
 ) {
     // Convenience properties to get time values in seconds for display
     val configuredSeconds: Int get() = (configuredTime / 1000).toInt()
