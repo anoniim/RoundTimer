@@ -13,7 +13,7 @@ data class AudioCue(
  * Represents a scheduled sound event with exact timing
  */
 data class ScheduledSound(
-    val triggerTimeMs: Long,                   // Exact millisecond when to trigger
+    var triggerTimeMs: Long,                   // Exact millisecond when to trigger
     val sound: Sound,                          // The sound to play
     val pattern: AudioPattern = AudioPattern.Single
 )

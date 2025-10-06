@@ -33,4 +33,3 @@ plugins {
 }
 
 include(":composeApp")
-includeBuild("buildSrc") { name = "buildSrc" }

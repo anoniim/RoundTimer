@@ -78,33 +78,23 @@ class AudioScheduler(
      */
     fun fastForward(fastForwardMs: Long) {
         timeOffset += fastForwardMs
-        
-        // Cancel any currently playing sound
-        currentSoundJob?.cancel()
-        soundPlayer.stopSound()
-        
+
         // Immediately trigger any sounds that should have played during the fast-forward period
         val currentTime = getCurrentElapsedTime()
-        val soundsToTrigger = mutableListOf<ScheduledSound>()
-        
+
         synchronized(scheduledSounds) {
-            val iterator = scheduledSounds.iterator()
-            while (iterator.hasNext()) {
-                val sound = iterator.next()
-                if (sound.triggerTimeMs <= currentTime) {
-                    soundsToTrigger.add(sound)
-                    iterator.remove()
-                } else {
-                    break // Since list is sorted, no more sounds to trigger
-                }
+            scheduledSounds.removeAll { it.triggerTimeMs <= currentTime }
+            scheduledSounds.forEach {
+                it.triggerTimeMs -= currentTime
             }
         }
-        
-        // Play only the last (most recent) triggered sound to avoid overlap
-        soundsToTrigger.lastOrNull()?.let { lastSound ->
-            currentSoundJob = scope.launch {
-                playScheduledSound(lastSound)
-            }
+
+        // Restart the processing loop to recalculate delays
+        schedulerJob?.cancel()
+        startTime = TimeSource.Monotonic.markNow()
+        timeOffset = 0
+        schedulerJob = scope.launch {
+            processScheduledSounds()
         }
     }
     

@@ -229,6 +229,7 @@ class TimerViewModel : ViewModel() {
                 Sound.OVERTIME_CALL6,
             )
             overtimeEvents.add(ScheduledSound(timerDurationMs + (8 * 1000L), overtimeCalls.random()))
+            overtimeEvents.add(ScheduledSound(timerDurationMs + (14 * 1000L), overtimeCalls.random()))
         }
 
         return overtimeEvents

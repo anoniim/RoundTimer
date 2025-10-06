@@ -108,11 +108,11 @@ fun SettingsScreen(
                         subtitle = "Humorous messages in Czech",
                         isChecked = settingsState.isJonasScoldingEnabled
                     ) { onSettingChanged("jonasScolding", it) }
-                    SettingItem(
-                        name = "Secret fast forward",
-                        subtitle = "Click the background to skip 10s",
-                        isChecked = settingsState.isSecretFastForwardEnabled
-                    ) { onSettingChanged("secretFastForward", it) }
+//                    SettingItem(
+//                        name = "Secret fast forward",
+//                        subtitle = "Click the background to skip 10s",
+//                        isChecked = settingsState.isSecretFastForwardEnabled
+//                    ) { onSettingChanged("secretFastForward", it) }
                 }
             }
         }
