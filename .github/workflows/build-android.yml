@@ -53,7 +53,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: android-release-bundle
-        path: app/build/outputs/bundle/release/app-release.aab
+        path: composeApp/build/outputs/bundle/release/composeApp-release.aab
         retention-days: ${{ env.artifact_retention }}
 
     - name: Upload release notes
