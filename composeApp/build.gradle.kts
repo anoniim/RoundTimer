@@ -135,10 +135,16 @@ android {
 }
 
 androidComponents {
-    onVariants {
+    onVariants { variant ->
         val versionCodeProvider = project.getGitVersionCodeProvider()
         val versionNameProvider = project.getGitVersionNameProvider()
-        it.outputs.forEach { output ->
+
+        // Log the details for the current variant being processed
+        println("Configuring variant: ${variant.name}")
+        println("  -> Version Code: ${versionCodeProvider.get()}")
+        println("  -> Version Name: ${versionNameProvider.get()}")
+
+        variant.outputs.forEach { output ->
             output.versionCode.set(versionCodeProvider)
             output.versionName.set(versionNameProvider)
         }

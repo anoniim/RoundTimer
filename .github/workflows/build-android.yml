@@ -102,5 +102,5 @@ jobs:
           packageName: net.solvetheriddle.roundtimer
           releaseFiles: composeApp-release.aab
           track: ${{ env.publishing_track }}
-          status: draft
+          status: inProgress
           whatsNewDirectory: releaseNotes # FIXME: Release notes not published (bug in the plugin?)
