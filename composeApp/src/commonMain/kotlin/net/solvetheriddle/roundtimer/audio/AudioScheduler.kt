@@ -131,7 +131,7 @@ class AudioScheduler(
             if (nextSound != null && currentTime >= nextSound.triggerTimeMs) {
                 // Remove and play the sound
                 synchronized(scheduledSounds) {
-                    scheduledSounds.removeFirst()
+                    scheduledSounds.removeAt(0)
                 }
                 
 //                // Cancel any currently playing sound before starting new one
