@@ -1,3 +1,3 @@
-- Audio doesn't play on Android
 - Allow scrolling when touching outside the settings list
-- Android playback only allows one sounds at a time
+- status bar dark color in dark mode on other than active timer screens
+- When old navigation is enabled, background progress starts behind the navigation bar 

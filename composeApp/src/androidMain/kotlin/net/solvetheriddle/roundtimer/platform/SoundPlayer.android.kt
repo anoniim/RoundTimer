@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import net.solvetheriddle.roundtimer.AppContext
 import net.solvetheriddle.roundtimer.R
@@ -150,7 +149,7 @@ actual class SoundPlayer(private val context: Context) {
         }
     }
     
-    fun cleanup() {
+    actual fun cleanup() {
         try {
             scope.cancel()
             soundPool?.release()

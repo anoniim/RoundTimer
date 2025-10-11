@@ -154,7 +154,7 @@ actual class SoundPlayer {
         currentClip = null
     }
     
-    fun cleanup() {
+    actual fun cleanup() {
         clipPools.values.forEach { pool ->
             pool.forEach { audioClip ->
                 try {

@@ -91,6 +91,7 @@ class TimerViewModel : ViewModel() {
                 configuredTime = milliseconds,
                 currentTime = milliseconds
             )
+            analyticsService.logEvent("configured_time_updated", mapOf("seconds" to seconds.toString()))
             viewModelScope.launch {
                 storage.saveConfiguredTime(milliseconds)
             }
@@ -136,7 +137,15 @@ class TimerViewModel : ViewModel() {
             startTimestamp = Clock.System.now().toEpochMilliseconds()
         )
         analyticsService.logEvent(
-            "timer_started", mapOf("game_id" to currentState.activeGameId!!, "configured_time" to currentState.configuredTime.toString())
+            "timer_started", mapOf(
+                "game_id" to currentState.activeGameId!!,
+                "configured_time" to currentState.configuredTime.toString(),
+                "subtle_drumming" to currentState.settings.isSubtleDrummingEnabled.toString(),
+                "intense_drumming" to currentState.settings.isIntenseDrummingEnabled.toString(),
+                "overtime_alarm" to currentState.settings.isOvertimeAlarmEnabled.toString(),
+                "timeout_gong" to currentState.settings.isTimeoutGongEnabled.toString(),
+                "jonas_scolding" to currentState.settings.isJonasScoldingEnabled.toString()
+            )
         )
 
         startCountdownWithPreciseAudio()
@@ -153,7 +162,7 @@ class TimerViewModel : ViewModel() {
         val audioEvents = createAudioSchedule(configuredTime)
 
         // Start the precise audio scheduler
-        audioScheduler.start(configuredTime, audioEvents)
+        audioScheduler.start(audioEvents)
 
         // Start the UI update timer using the same time source
         startSynchronizedCountdown()
@@ -327,6 +336,7 @@ class TimerViewModel : ViewModel() {
         deletedRound?.let {
             val newRounds = (_state.value.rounds + it).sortedBy { it.timestamp }
             _state.value = _state.value.copy(rounds = newRounds)
+            analyticsService.logEvent("round_delete_undone", mapOf("game_id" to it.gameId))
             viewModelScope.launch {
                 storage.saveRounds(newRounds)
             }
@@ -406,6 +416,7 @@ class TimerViewModel : ViewModel() {
 
     fun setActiveGame(gameId: String) {
         _state.value = _state.value.copy(activeGameId = gameId)
+        analyticsService.logEvent("active_game_changed", mapOf("game_id" to gameId))
         viewModelScope.launch {
             storage.saveActiveGameId(gameId)
         }
@@ -451,6 +462,10 @@ class TimerViewModel : ViewModel() {
         }
         if (newSettings != currentSettings) {
             _state.value = _state.value.copy(settings = newSettings)
+            analyticsService.logEvent(
+                "setting_updated",
+                mapOf("setting_name" to settingName, "is_enabled" to isEnabled.toString())
+            )
             viewModelScope.launch {
                 storage.saveSettings(newSettings)
             }
@@ -478,6 +493,7 @@ class TimerViewModel : ViewModel() {
         deletedGame?.let {
             val newGames = (_state.value.games + it).sortedByDescending { it.id }
             _state.value = _state.value.copy(games = newGames)
+            analyticsService.logEvent("game_delete_undone", mapOf("game_id" to it.id))
             viewModelScope.launch {
                 storage.saveGames(newGames)
             }
