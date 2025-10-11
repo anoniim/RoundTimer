@@ -38,6 +38,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.ui.components.SetAppropriateStatusBarColor
 import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -56,6 +57,8 @@ fun HistoryScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    SetAppropriateStatusBarColor()
 
     // Calculate statistics
     val totalRounds = filteredRounds.size
@@ -146,15 +149,15 @@ fun HistoryScreen(
                     modifier = Modifier
                         .widthIn(max = 1200.dp)
                         .fillMaxHeight()
-                        .padding(horizontal = 84.dp, vertical = 16.dp),
+                        .padding(vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Left side: Statistics
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .widthIn(max = 400.dp)
                             .fillMaxHeight()
+                            .padding(start = 84.dp)
                     ) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -203,7 +206,8 @@ fun HistoryScreen(
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
                                     state = lazyListState,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                    contentPadding = PaddingValues(end = 84.dp)
                                 ) {
                                     items(
                                         items = filteredRounds,

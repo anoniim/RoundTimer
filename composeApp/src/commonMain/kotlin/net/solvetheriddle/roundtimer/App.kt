@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import net.solvetheriddle.roundtimer.platform.isButtonNavigationEnabled
 import net.solvetheriddle.roundtimer.ui.screens.ActiveTimerScreen
 import net.solvetheriddle.roundtimer.ui.screens.ConfigurationScreen
 import net.solvetheriddle.roundtimer.ui.screens.GamesScreen
@@ -61,6 +62,7 @@ fun App() {
                     )
                 }
                 Screen.ActiveTimer.route -> {
+                    val isOldNavigationEnabled = isButtonNavigationEnabled()
                     ActiveTimerScreen(
                         state = state,
                         onStopTimer = {
@@ -68,7 +70,8 @@ fun App() {
                             currentScreenRoute = Screen.Configuration.route
                         },
                         fastForward = { viewModel.fastForward(10) },
-                        formatTime = viewModel::formatTime
+                        formatTime = viewModel::formatTime,
+                        isOldNavigationEnabled = isOldNavigationEnabled
                     )
                 }
                 Screen.History.route -> {

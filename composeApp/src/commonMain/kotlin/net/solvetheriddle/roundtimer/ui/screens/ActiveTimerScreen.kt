@@ -5,7 +5,9 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,9 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import net.solvetheriddle.roundtimer.model.TimerState
-import net.solvetheriddle.roundtimer.platform.getStatusBarManager
+import net.solvetheriddle.roundtimer.ui.components.SetAppropriateStatusBarColor
 import net.solvetheriddle.roundtimer.ui.components.StyledCard
 import net.solvetheriddle.roundtimer.ui.theme.GreenBackground
 import net.solvetheriddle.roundtimer.ui.theme.GreenBox
@@ -35,17 +36,10 @@ fun ActiveTimerScreen(
     state: TimerState,
     onStopTimer: () -> Unit,
     fastForward: () -> Unit,
-    formatTime: (Int) -> String
+    formatTime: (Int) -> String,
+    isOldNavigationEnabled: Boolean = false,
 ) {
-    // Set status bar to dark content for light mode
-    val isDarkTheme = isSystemInDarkTheme()
-    LaunchedEffect(isDarkTheme) {
-        try {
-            getStatusBarManager().setStatusBarStyle(isDarkContent = !isDarkTheme)
-        } catch (e: Exception) {
-            println("! This platform doesn't support status bar styling")
-        }
-    }
+    SetAppropriateStatusBarColor()
     // Pulse animation for overtime
     val pulseScale by animateFloatAsState(
         targetValue = if (state.isOvertime) 1.1f else 1f,
@@ -95,8 +89,14 @@ fun ActiveTimerScreen(
 
     val isLandscape = rememberIsLandscape()
 
+    val rootModifier = if (isOldNavigationEnabled) {
+        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars)
+    } else {
+        Modifier.fillMaxSize()
+    }
+
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = rootModifier,
         contentAlignment = Alignment.Center
     ) {
         // Progress fill background

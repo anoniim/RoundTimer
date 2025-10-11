@@ -21,6 +21,7 @@ import net.solvetheriddle.roundtimer.model.TimerState
 import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 import net.solvetheriddle.roundtimer.platform.getStatusBarManager
 import net.solvetheriddle.roundtimer.ui.components.ScrollableDial
+import net.solvetheriddle.roundtimer.ui.components.SetAppropriateStatusBarColor
 import net.solvetheriddle.roundtimer.ui.components.StyledCard
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -35,14 +36,7 @@ fun ConfigurationScreen(
     activeGameId: String?,
     games: List<Game>
 ) {
-    // Set status bar to dark content for light mode
-    LaunchedEffect(Unit) {
-        try {
-            getStatusBarManager().setStatusBarStyle(isDarkContent = true)
-        } catch (e: Exception) {
-            println("! This platform doesn't support status bar styling")
-        }
-    }
+    SetAppropriateStatusBarColor()
     val isLandscape = rememberIsLandscape()
 
     Scaffold(

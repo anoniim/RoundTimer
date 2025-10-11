@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -61,6 +62,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.ui.components.SetAppropriateStatusBarColor
 import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -83,6 +85,8 @@ fun GamesScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    SetAppropriateStatusBarColor()
 
     if (showEditDialog && gameToEdit != null) {
         EditGameNameDialog(
@@ -201,8 +205,8 @@ fun GamesScreen(
                         LazyColumn(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight()
-                                .padding(start = 96.dp)
+                                .fillMaxHeight(),
+                            contentPadding = PaddingValues(start = 96.dp)
                         ) {
                             items(state.games) { game ->
                                 val gameRounds = state.rounds.filter { it.gameId == game.id }

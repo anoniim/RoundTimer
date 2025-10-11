@@ -68,55 +68,68 @@ fun SettingsScreen(
         ) {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val isLandscape = maxWidth > maxHeight
-                val columnModifier = if (isLandscape) {
-                    Modifier
-                        .fillMaxWidth(0.5f)
-                        .align(Alignment.Center)
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState())
+                if (isLandscape) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(0.5f)
+                                .align(Alignment.Center)
+                                .padding(16.dp)
+                        ) {
+                            SettingItems(settingsState, onSettingChanged)
+                        }
+                    }
                 } else {
-                    Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState())
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        SettingItems(settingsState, onSettingChanged)
+                    }
                 }
-                Column(
-                    modifier = columnModifier
-                ) {
-                    SettingItem(
-                        name = "Subtle drumming",
-                        subtitle = "Drum call from T-60 every 10s",
-                        isChecked = settingsState.isSubtleDrummingEnabled
-                    ) { onSettingChanged("subtleDrumming", it) }
-                    SettingItem(
-                        name = "Intense drumming",
-                        subtitle = "Intense drumming from T-20",
-                        isChecked = settingsState.isIntenseDrummingEnabled
-                    ) { onSettingChanged("intenseDrumming", it) }
-                    SettingItem(
-                        name = "Overtime alarm",
-                        subtitle = "Annoying alarm after timer expires",
-                        isChecked = settingsState.isOvertimeAlarmEnabled
-                    ) { onSettingChanged("overtimeAlarm", it) }
-                    SettingItem(
-                        name = "Timeout gong",
-                        subtitle = "Long gong when timer expires",
-                        isChecked = settingsState.isTimeoutGongEnabled
-                    ) { onSettingChanged("timeoutGong", it) }
-                    SettingItem(
-                        name = "Jonas scolding",
-                        subtitle = "Quips in Czech after timer expires",
-                        isChecked = settingsState.isJonasScoldingEnabled
-                    ) { onSettingChanged("jonasScolding", it) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingItems(settingsState: SettingsState, onSettingChanged: (String, Boolean) -> Unit) {
+    SettingItem(
+        name = "Subtle drumming",
+        subtitle = "Drum call from T-60 every 10s",
+        isChecked = settingsState.isSubtleDrummingEnabled
+    ) { onSettingChanged("subtleDrumming", it) }
+    SettingItem(
+        name = "Intense drumming",
+        subtitle = "Intense drumming from T-20",
+        isChecked = settingsState.isIntenseDrummingEnabled
+    ) { onSettingChanged("intenseDrumming", it) }
+    SettingItem(
+        name = "Overtime alarm",
+        subtitle = "Annoying alarm after timer expires",
+        isChecked = settingsState.isOvertimeAlarmEnabled
+    ) { onSettingChanged("overtimeAlarm", it) }
+    SettingItem(
+        name = "Timeout gong",
+        subtitle = "Long gong when timer expires",
+        isChecked = settingsState.isTimeoutGongEnabled
+    ) { onSettingChanged("timeoutGong", it) }
+    SettingItem(
+        name = "Jonas scolding",
+        subtitle = "Quips in Czech after timer expires",
+        isChecked = settingsState.isJonasScoldingEnabled
+    ) { onSettingChanged("jonasScolding", it) }
 //                    SettingItem(
 //                        name = "Secret fast forward",
 //                        subtitle = "Click the background to skip 10s",
 //                        isChecked = settingsState.isSecretFastForwardEnabled
 //                    ) { onSettingChanged("secretFastForward", it) }
-                }
-            }
-        }
-    }
 }
 
 @Composable
