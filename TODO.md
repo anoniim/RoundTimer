@@ -1,1 +1,3 @@
-
+- Audio doesn't play on Android
+- Allow scrolling when touching outside the settings list
+- Android playback only allows one sounds at a time

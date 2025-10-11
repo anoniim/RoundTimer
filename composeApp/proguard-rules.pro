@@ -1,0 +1,2 @@
+-keep class androidx.media.** { *; }
+-dontwarn androidx.media.**

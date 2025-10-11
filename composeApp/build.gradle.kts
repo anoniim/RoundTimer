@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.resources.ResourcesExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
@@ -82,6 +83,10 @@ kotlin {
     }
 }
 
+compose.resources {
+    generateResClass = ResourcesExtension.ResourceClassGeneration.Always
+}
+
 android {
     namespace = "net.solvetheriddle.roundtimer"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -122,6 +127,7 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
         }
         getByName("debug") {

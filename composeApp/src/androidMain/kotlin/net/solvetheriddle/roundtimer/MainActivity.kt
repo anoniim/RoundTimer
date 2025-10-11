@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.tooling.preview.Preview
 import com.google.firebase.FirebaseApp
 import net.solvetheriddle.roundtimer.platform.StatusBarManager
+import net.solvetheriddle.roundtimer.platform.getSoundPlayer
 import net.solvetheriddle.roundtimer.storage.initializeStorageFactory
 
 class MainActivity : ComponentActivity() {
@@ -31,6 +33,12 @@ class MainActivity : ComponentActivity() {
         initializeStorageFactory(this)
 
         setContent {
+            val soundPlayer = getSoundPlayer()
+            DisposableEffect(Unit) {
+                onDispose {
+                    soundPlayer.cleanup()
+                }
+            }
             App()
         }
     }

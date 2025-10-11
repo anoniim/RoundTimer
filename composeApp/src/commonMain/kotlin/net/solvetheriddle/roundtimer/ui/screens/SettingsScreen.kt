@@ -100,12 +100,12 @@ fun SettingsScreen(
                     ) { onSettingChanged("overtimeAlarm", it) }
                     SettingItem(
                         name = "Timeout gong",
-                        subtitle = "Gong when timer expires",
+                        subtitle = "Long gong when timer expires",
                         isChecked = settingsState.isTimeoutGongEnabled
                     ) { onSettingChanged("timeoutGong", it) }
                     SettingItem(
                         name = "Jonas scolding",
-                        subtitle = "Humorous messages in Czech",
+                        subtitle = "Quips in Czech after timer expires",
                         isChecked = settingsState.isJonasScoldingEnabled
                     ) { onSettingChanged("jonasScolding", it) }
 //                    SettingItem(

@@ -134,10 +134,6 @@ class AudioScheduler(
                     scheduledSounds.removeAt(0)
                 }
                 
-//                // Cancel any currently playing sound before starting new one
-//                currentSoundJob?.cancel()
-//                soundPlayer.stopSound()
-                
                 // Start the new sound
                 currentSoundJob = scope.launch {
                     playScheduledSound(nextSound)
