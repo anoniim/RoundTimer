@@ -4,6 +4,10 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.SoundPool
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import net.solvetheriddle.roundtimer.AppContext
@@ -31,6 +35,7 @@ enum class AndroidSound(val resourceId: Int) {
  * Pre-loads all sounds for instant playback without I/O lag
  */
 actual class SoundPlayer(private val context: Context) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var soundPool: SoundPool? = null
     private var mediaPlayer: MediaPlayer? = null
     private val soundIds = ConcurrentHashMap<Sound, Int>()
@@ -68,7 +73,7 @@ actual class SoundPlayer(private val context: Context) {
                         soundsLoaded = true
                         println("All sounds loaded successfully")
                         pendingSound?.let {
-                            GlobalScope.launch {
+                            scope.launch {
                                 playSound(it)
                                 pendingSound = null
                             }
@@ -103,6 +108,10 @@ actual class SoundPlayer(private val context: Context) {
         if (sound == Sound.INTENSE) {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer.create(context, R.raw.intense)
+            mediaPlayer?.setOnErrorListener { _, _, _ ->
+                println("Error playing sound ${sound.fileName}")
+                false
+            }
             mediaPlayer?.start()
         } else {
             if (!soundsLoaded) {
@@ -143,9 +152,13 @@ actual class SoundPlayer(private val context: Context) {
     
     fun cleanup() {
         try {
+            scope.cancel()
             soundPool?.release()
             soundPool = null
             soundIds.clear()
+            activeStreams.clear()
+            mediaPlayer?.release()
+            mediaPlayer = null
         } catch (e: Exception) {
             println("Error during cleanup: ${e.message}")
         }

@@ -488,5 +488,6 @@ class TimerViewModel : ViewModel() {
         super.onCleared()
         timerJob?.cancel()
         audioScheduler.stop()
+        soundPlayer.cleanup()
     }
 }

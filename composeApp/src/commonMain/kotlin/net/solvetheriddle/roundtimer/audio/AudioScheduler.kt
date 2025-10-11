@@ -11,6 +11,9 @@ import net.solvetheriddle.roundtimer.platform.SoundPlayer
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 /**
  * Handles precise audio scheduling with millisecond accuracy.
  * Separates audio timing from UI updates for better precision.
@@ -20,6 +23,7 @@ class AudioScheduler(
     private val soundPlayer: SoundPlayer,
     private val scope: CoroutineScope
 ) {
+    private val mutex = Mutex()
     private var scheduledSounds = mutableListOf<ScheduledSound>()
     private var schedulerJob: Job? = null
     private var currentSoundJob: Job? = null // Track currently playing sound
@@ -29,7 +33,7 @@ class AudioScheduler(
     /**
      * Start the audio scheduler with a list of pre-calculated sound events
      */
-    fun start(timerDurationMs: Long, audioEvents: List<ScheduledSound>) {
+    fun start(audioEvents: List<ScheduledSound>) {
         stop() // Cancel any existing scheduler
         
         scheduledSounds.clear()
@@ -43,35 +47,7 @@ class AudioScheduler(
             processScheduledSounds()
         }
     }
-    
-    /**
-     * Add a sound event dynamically (useful for overtime sounds)
-     */
-    fun scheduleSound(delayMs: Long, sound: Sound, pattern: AudioPattern = AudioPattern.Single) {
-        val triggerTime = getCurrentElapsedTime() + delayMs
-        val scheduledSound = ScheduledSound(triggerTime, sound, pattern)
-        
-        synchronized(scheduledSounds) {
-            scheduledSounds.add(scheduledSound)
-            scheduledSounds.sortBy { it.triggerTimeMs }
-        }
-        
-        // If delay is 0 (immediate), interrupt current sound and play now
-        if (delayMs == 0L) {
-            currentSoundJob?.cancel()
-            soundPlayer.stopSound()
-            
-            // Remove from scheduled list since we're playing it now
-            synchronized(scheduledSounds) {
-                scheduledSounds.removeAll { it.triggerTimeMs == triggerTime && it.sound == sound }
-            }
-            
-            currentSoundJob = scope.launch {
-                playScheduledSound(scheduledSound)
-            }
-        }
-    }
-    
+
     /**
      * Fast forward the timer by the specified amount of milliseconds.
      * This will trigger any audio cues that should have played during the skipped time.
@@ -82,10 +58,12 @@ class AudioScheduler(
         // Immediately trigger any sounds that should have played during the fast-forward period
         val currentTime = getCurrentElapsedTime()
 
-        synchronized(scheduledSounds) {
-            scheduledSounds.removeAll { it.triggerTimeMs <= currentTime }
-            scheduledSounds.forEach {
-                it.triggerTimeMs -= currentTime
+        scope.launch {
+            mutex.withLock {
+                scheduledSounds.removeAll { it.triggerTimeMs <= currentTime }
+                scheduledSounds.forEach {
+                    it.triggerTimeMs -= currentTime
+                }
             }
         }
 
@@ -130,7 +108,7 @@ class AudioScheduler(
             
             if (nextSound != null && currentTime >= nextSound.triggerTimeMs) {
                 // Remove and play the sound
-                synchronized(scheduledSounds) {
+                mutex.withLock {
                     scheduledSounds.removeAt(0)
                 }
                 
