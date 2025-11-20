@@ -24,6 +24,7 @@ jobs:
       with:
         fetch-depth: 0 # makes the entire history available (needed to obtain latest tag)
 
+    # Beware, this does not trigger other GitHub Actions that are triggered on git tag.. which makes it a bit pointless
     - name: Tag commit
       run: |
         git config --local user.email "${{ github.actor }}@users.noreply.github.com"
