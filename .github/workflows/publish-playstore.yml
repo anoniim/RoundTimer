@@ -58,7 +58,7 @@ jobs:
           ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
         run: |
           chmod +x gradlew
-          ./gradlew app:bundleRelease
+          ./gradlew composeApp:bundleRelease
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
