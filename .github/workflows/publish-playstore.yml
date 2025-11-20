@@ -80,7 +80,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
           packageName: net.solvetheriddle.roundtimer
-          releaseFiles: composeApp-release.aab
+          releaseFiles: composeApp/build/outputs/bundle/release/composeApp-release.aab
           track: ${{ github.event.inputs.track }}
           status: completed
           whatsNewDirectory: releaseNotes
