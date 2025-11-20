@@ -45,7 +45,8 @@ fun ConfigurationScreen(
     onRenameCustomCategory: (String, String) -> Unit,
     onAddPlayerCategory: (String) -> Unit,
     onRemovePlayerCategory: (String) -> Unit,
-    onRenamePlayerCategory: (String, String) -> Unit
+    onRenamePlayerCategory: (String, String) -> Unit,
+    playerSuggestions: List<String> = emptyList()
 ) {
     SetAppropriateStatusBarColor()
     val isLandscape = rememberIsLandscape()
@@ -102,6 +103,7 @@ fun ConfigurationScreen(
                         onAddPlayerCategory = onAddPlayerCategory,
                         onRemovePlayerCategory = onRemovePlayerCategory,
                         onRenamePlayerCategory = onRenamePlayerCategory,
+                        playerSuggestions = playerSuggestions,
                         modifier = Modifier
                             .padding(end = 32.dp)
                             .widthIn(max = 400.dp)
@@ -131,6 +133,7 @@ fun ConfigurationScreen(
                             onAddPlayerCategory = onAddPlayerCategory,
                             onRemovePlayerCategory = onRemovePlayerCategory,
                             onRenamePlayerCategory = onRenamePlayerCategory,
+                            playerSuggestions = playerSuggestions,
                             modifier = Modifier
                                 .padding(bottom = 24.dp, start = 16.dp)
                                 .width(cardSize) // Align width with card

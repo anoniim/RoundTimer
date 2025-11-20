@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,6 +31,7 @@ fun CategoryList(
     onAddPlayerCategory: (String) -> Unit,
     onRemovePlayerCategory: (String) -> Unit,
     onRenamePlayerCategory: (String, String) -> Unit,
+    playerSuggestions: List<String> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -64,7 +67,8 @@ fun CategoryList(
             addDialogTitle = "Add player",
             addDialogLabel = "Player name",
             editDialogTitle = "Edit player",
-            editDialogLabel = "Player name"
+            editDialogLabel = "Player name",
+            suggestions = playerSuggestions
         )
     }
 }
@@ -83,7 +87,8 @@ private fun CategoryRow(
     addDialogTitle: String,
     addDialogLabel: String,
     editDialogTitle: String,
-    editDialogLabel: String
+    editDialogLabel: String,
+    suggestions: List<String> = emptyList()
 ) {
     // We need to handle wrapping if items exceed maxItems per row
     // But the requirement says "When the maximum number in a row is reached, a new row is added below."
@@ -150,12 +155,13 @@ private fun CategoryRow(
                     AddCategoryButton(
                         onAdd = onAddCategory,
                         dialogTitle = addDialogTitle,
-                        dialogLabel = addDialogLabel
+                        dialogLabel = addDialogLabel,
+                        suggestions = suggestions
                     )
                 }
             }
         }
-        
+
         // If the last chunk was full (4 items), we need a new row just for the + button
         if (index == chunks.lastIndex && chunk.size == 4) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -166,7 +172,8 @@ private fun CategoryRow(
                 AddCategoryButton(
                     onAdd = onAddCategory,
                     dialogTitle = addDialogTitle,
-                    dialogLabel = addDialogLabel
+                    dialogLabel = addDialogLabel,
+                    suggestions = suggestions
                 )
             }
         }
@@ -241,10 +248,11 @@ private fun CategoryChip(
 private fun AddCategoryButton(
     onAdd: (String) -> Unit,
     dialogTitle: String,
-    dialogLabel: String
+    dialogLabel: String,
+    suggestions: List<String> = emptyList()
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    
+
     if (showDialog) {
         AddCategoryDialog(
             onDismiss = { showDialog = false },
@@ -253,7 +261,8 @@ private fun AddCategoryButton(
                 showDialog = false
             },
             title = dialogTitle,
-            label = dialogLabel
+            label = dialogLabel,
+            suggestions = suggestions
         )
     }
 
@@ -284,26 +293,71 @@ private fun AddCategoryDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     title: String,
-    label: String
+    label: String,
+    suggestions: List<String> = emptyList()
 ) {
-    var text by remember { mutableStateOf("") }
+    var textState by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue("")) }
+    val focusRequester = remember { FocusRequester() }
+    var expanded by remember { mutableStateOf(false) }
+    
+    val filteredSuggestions = remember(textState.text, suggestions) {
+        if (textState.text.isBlank()) suggestions
+        else suggestions.filter { it.contains(textState.text, ignoreCase = true) && !it.equals(textState.text, ignoreCase = true) }
+    }
     
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text(label) },
-                singleLine = true
-            )
+            Column {
+                Box {
+                    OutlinedTextField(
+                        value = textState,
+                        onValueChange = { 
+                            textState = it
+                            expanded = true
+                        },
+                        label = { Text(label) },
+                        singleLine = true,
+                        modifier = Modifier.focusRequester(focusRequester).fillMaxWidth()
+                    )
+                    
+                    // Auto-expand dropdown when there are suggestions
+                    LaunchedEffect(filteredSuggestions) {
+                        if (filteredSuggestions.isNotEmpty()) {
+                            expanded = true
+                        }
+                    }
+                    
+                    DropdownMenu(
+                        expanded = expanded && filteredSuggestions.isNotEmpty(),
+                        onDismissRequest = { expanded = false },
+                        properties = androidx.compose.ui.window.PopupProperties(focusable = false)
+                    ) {
+                        filteredSuggestions.forEach { suggestion ->
+                            DropdownMenuItem(
+                                text = { Text(suggestion) },
+                                onClick = {
+                                    textState = androidx.compose.ui.text.input.TextFieldValue(
+                                        text = suggestion,
+                                        selection = androidx.compose.ui.text.TextRange(suggestion.length)
+                                    )
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            LaunchedEffect(Unit) {
+                focusRequester.requestFocus()
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = { 
-                    if (text.isNotBlank()) {
-                        onConfirm(text)
+                onClick = {
+                    if (textState.text.isNotBlank()) {
+                        onConfirm(textState.text)
                     }
                 }
             ) {

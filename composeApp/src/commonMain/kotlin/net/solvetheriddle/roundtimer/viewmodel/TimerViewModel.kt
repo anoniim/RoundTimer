@@ -375,17 +375,17 @@ class TimerViewModel : ViewModel() {
         }
     }
 
-    fun updateRound(roundId: String, newDuration: Int, newOvertime: Int) {
+    fun updateRound(roundId: String, newDuration: Int, newOvertime: Int, newCategory: String) {
         val currentState = _state.value
         val updatedRounds = currentState.rounds.map { round ->
             if (round.id == roundId) {
-                round.copy(duration = newDuration, overtime = newOvertime)
+                round.copy(duration = newDuration, overtime = newOvertime, category = newCategory)
             } else {
                 round
             }
         }
         _state.value = currentState.copy(rounds = updatedRounds)
-        analyticsService.logEvent("round_updated", mapOf("round_id" to roundId, "duration" to newDuration.toString()))
+        analyticsService.logEvent("round_updated", mapOf("round_id" to roundId, "duration" to newDuration.toString(), "category" to newCategory))
         viewModelScope.launch {
             try {
                 storage.saveRounds(updatedRounds)
@@ -643,6 +643,13 @@ class TimerViewModel : ViewModel() {
         )
         updateActiveGameTypes(_state.value.customTypes, newTypes)
         analyticsService.logEvent("rename_player_category", mapOf("oldName" to oldName, "newName" to newName))
+    }
+
+    fun getPreviouslyUsedPlayerNames(): List<String> {
+        return _state.value.games
+            .flatMap { it.playerTypes }
+            .distinct()
+            .sorted()
     }
 
     private fun updateActiveGameTypes(customTypes: List<String>, playerTypes: List<String>) {

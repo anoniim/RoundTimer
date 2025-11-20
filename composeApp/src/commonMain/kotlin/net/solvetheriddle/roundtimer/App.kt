@@ -68,7 +68,8 @@ fun App() {
                         onRenameCustomCategory = viewModel::renameCustomCategory,
                         onAddPlayerCategory = viewModel::addPlayerCategory,
                         onRemovePlayerCategory = viewModel::removePlayerCategory,
-                        onRenamePlayerCategory = viewModel::renamePlayerCategory
+                        onRenamePlayerCategory = viewModel::renamePlayerCategory,
+                        playerSuggestions = viewModel.getPreviouslyUsedPlayerNames()
                     )
                 }
                 Screen.ActiveTimer.route -> {

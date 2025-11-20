@@ -32,6 +32,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,10 +41,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -62,7 +66,7 @@ fun HistoryScreen(
     onDeleteRound: (String) -> Unit,
     onUndoDelete: () -> Unit,
     onResetHistory: (String) -> Unit,
-    onUpdateRound: (String, Int, Int) -> Unit,
+    onUpdateRound: (String, Int, Int, String) -> Unit,
     formatTime: (Int) -> String
 ) {
     val isLandscape = rememberIsLandscape()
@@ -295,10 +299,11 @@ fun HistoryScreen(
         editingRound?.let { round ->
             EditRoundDialog(
                 round = round,
+                availableCategories = allCategories.filter { it != "All" },
                 formatTime = formatTime,
                 onDismiss = { editingRound = null },
-                onSave = { newDuration, newOvertime ->
-                    onUpdateRound(round.id, newDuration, newOvertime)
+                onSave = { newDuration, newOvertime, newCategory ->
+                    onUpdateRound(round.id, newDuration, newOvertime, newCategory)
                     editingRound = null
                 },
                 onDelete = {
@@ -558,16 +563,86 @@ private fun RoundItem(
 }
 
 @Composable
+private fun RepeatingIconButton(
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    enabled: Boolean = true,
+    initialDelayMillis: Long = 500,
+    intervalMillis: Long = 200
+) {
+    var isPressed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            // First click happens immediately
+            onClick()
+            // Wait before starting continuous updates
+            delay(initialDelayMillis)
+            // Then repeat continuously
+            while (isPressed) {
+                onClick()
+                delay(intervalMillis)
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        if (enabled) {
+                            isPressed = true
+                            tryAwaitRelease()
+                            isPressed = false
+                        }
+                    }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        CompositionLocalProvider(LocalContentColor provides if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)) {
+            icon()
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun EditRoundDialog(
     round: Round,
+    availableCategories: List<String>,
     formatTime: (Int) -> String,
     onDismiss: () -> Unit,
-    onSave: (Int, Int) -> Unit,
+    onSave: (Int, Int, String) -> Unit,
     onDelete: () -> Unit
 ) {
     var timeSeconds by remember { mutableStateOf(round.duration) }
     var overtimeSeconds by remember { mutableStateOf(round.overtime) }
-    
+    var selectedCategory by remember { mutableStateOf(round.category) }
+    var expanded by remember { mutableStateOf(false) }
+
+    val totalSeconds = timeSeconds + overtimeSeconds
+    val hadInitialOvertime = remember { round.overtime > 0 }
+
+    // Handle increment: always add to duration
+    val handleIncrement = {
+        timeSeconds += 5
+    }
+
+    // Handle decrement: remove from overtime first, then from duration
+    val handleDecrement = {
+        if (overtimeSeconds > 0) {
+            // If there's overtime, decrease it first
+            overtimeSeconds = maxOf(0, overtimeSeconds - 5)
+        } else {
+            // Otherwise decrease duration (but not below 0)
+            timeSeconds = maxOf(0, timeSeconds - 5)
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit round") },
@@ -575,36 +650,48 @@ private fun EditRoundDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Duration editing
+                // Category/Type selector
                 Column {
                     Text(
-                        text = "Duration",
+                        text = "Type",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded }
                     ) {
-                        IconButton(onClick = { timeSeconds = maxOf(0, timeSeconds - 5) }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Decrease")
-                        }
-                        Text(
-                            text = formatTime(timeSeconds),
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.weight(1f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        OutlinedTextField(
+                            value = selectedCategory,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                         )
-                        IconButton(onClick = { timeSeconds += 5 }) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Increase")
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            availableCategories.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { Text(category) },
+                                    onClick = {
+                                        selectedCategory = category
+                                        expanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
-                
-                // Overtime editing
+
+                // Total Duration editing
                 Column {
                     Text(
-                        text = "Overtime",
+                        text = "Total Duration",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -612,18 +699,32 @@ private fun EditRoundDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(onClick = { overtimeSeconds = maxOf(0, overtimeSeconds - 5) }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Decrease")
-                        }
-                        Text(
-                            text = formatTime(overtimeSeconds),
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.weight(1f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        RepeatingIconButton(
+                            onClick = handleDecrement,
+                            icon = { Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Decrease") }
                         )
-                        IconButton(onClick = { overtimeSeconds += 5 }) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Increase")
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = formatTime(totalSeconds),
+                                style = MaterialTheme.typography.headlineMedium,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            if (hadInitialOvertime && overtimeSeconds > 0) {
+                                Text(
+                                    text = "${formatTime(timeSeconds)} + ${formatTime(overtimeSeconds)} OT",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
                         }
+                        RepeatingIconButton(
+                            onClick = handleIncrement,
+                            icon = { Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Increase") }
+                        )
                     }
                 }
             }
@@ -636,7 +737,7 @@ private fun EditRoundDialog(
                 ) {
                     Text("Delete round")
                 }
-                Button(onClick = { onSave(timeSeconds, overtimeSeconds) }) {
+                Button(onClick = { onSave(timeSeconds, overtimeSeconds, selectedCategory) }) {
                     Text("Save")
                 }
             }
