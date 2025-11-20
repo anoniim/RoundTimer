@@ -3,14 +3,11 @@ name: Build Android Bundle
 on:
   push:
     branches: [ "main" ]
-  create:
 
 
 jobs:
 
   build:
-    # Run only on a push to the main branch or when a tag is created (needed because 'create' also runs when a new branch is created)
-    if: github.event_name == 'push' || (github.event_name == 'create' && github.event.ref_type == 'tag')
     runs-on: ubuntu-latest
 
     steps:    
@@ -37,70 +34,17 @@ jobs:
         chmod +x gradlew
         ./gradlew composeApp:bundleRelease
         
-    - name: Set retention period based on event
-      run: |
-        if [[ "${{ github.event_name }}" == "push" ]]; then
-          RETENTION=14
-        elif [[ "${{ github.event_name }}" == "create" && "${{ github.event.ref_type }}" == "tag" ]]; then
-          RETENTION=90
-        else
-          RETENTION=7 # Default retention 7 days
-        fi
-        echo "artifact_retention=$RETENTION" >> $GITHUB_ENV
-        echo "Artifact will be retained for $RETENTION days"
-          
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
       with:
         name: android-release-bundle
         path: composeApp/build/outputs/bundle/release/composeApp-release.aab
-        retention-days: ${{ env.artifact_retention }}
+        retention-days: 90
 
     - name: Upload release notes
       uses: actions/upload-artifact@v4
       with:
         name: android-release-notes
         path: releaseNotes
-        retention-days: ${{ env.artifact_retention }}
+        retention-days: 90
 
-  publish:
-    # Run only on a push to the main branch or when a tag is created (needed because 'create' also runs when a new branch is created)
-    if: github.event_name == 'push' || (github.event_name == 'create' && github.event.ref_type == 'tag')
-    runs-on: ubuntu-latest
-    
-    needs: build
-
-    steps:
-      - name: Set track based on event 
-        run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            TRACK=internal
-          elif [[ "${{ github.event_name }}" == "create" && "${{ github.event.ref_type }}" == "tag" ]]; then
-            TRACK=alpha
-          else
-            TRACK=internal # Default track
-          fi
-          echo "publishing_track=$TRACK" >> $GITHUB_ENV
-          echo "Artifact will be published to the $TRACK track"
-    
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: android-release-bundle
-
-      - name: Download release notes
-        uses: actions/download-artifact@v4
-        with:
-          name: android-release-notes
-          path: releaseNotes
-          merge-multiple: true
-
-      - name: Publish to Play Store
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: net.solvetheriddle.roundtimer
-          releaseFiles: composeApp-release.aab
-          track: ${{ env.publishing_track }}
-          status: completed
-          whatsNewDirectory: releaseNotes # FIXME: Release notes not published (bug in the plugin?)

@@ -1,0 +1,85 @@
+name: Tag and Publish to Play Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      tagName:
+        description: 'Tag name (e.g., v1.2.3)'
+        required: true
+      tagMessage:
+        description: 'Tag message (optional release notes)'
+        required: false
+        default: ''
+      track:
+        description: 'Play Store track'
+        required: true
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+        default: alpha
+
+jobs:
+  tag-build-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TAG_ACCESS_TOKEN }}
+          fetch-depth: 0 # makes the entire history available (needed to obtain latest tag)
+
+      - name: Tag commit
+        run: |
+          git config --local user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --local user.name "${{ github.actor }}"
+          if [[ -n "${{ github.event.inputs.tagMessage }}" ]]; then
+            git tag -a ${{ github.event.inputs.tagName }} -m "${{ github.event.inputs.tagMessage }}"
+          else
+            git tag ${{ github.event.inputs.tagName }}
+          fi
+          git push origin ${{ github.event.inputs.tagName }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+          cache: gradle
+
+      - name: Load Android release keystore from GitHub Secrets
+        run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > app.keystore
+
+      - name: Build Android Bundle with Gradle
+        env:
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+        run: |
+          chmod +x gradlew
+          ./gradlew app:bundleRelease
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-bundle
+          path: composeApp/build/outputs/bundle/release/composeApp-release.aab
+          retention-days: 90
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-notes
+          path: releaseNotes
+          retention-days: 90
+
+      - name: Publish to Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: net.solvetheriddle.roundtimer
+          releaseFiles: composeApp-release.aab
+          track: ${{ github.event.inputs.track }}
+          status: completed
+          whatsNewDirectory: releaseNotes
