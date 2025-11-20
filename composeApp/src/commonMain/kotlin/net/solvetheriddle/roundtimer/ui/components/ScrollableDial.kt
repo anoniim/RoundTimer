@@ -74,8 +74,8 @@ fun ScrollableDial(
         pageCount = { values.size }
     )
     LaunchedEffect(pagerState) {
-        // Ignore the very first value reported by the pager to give the ViewModel time to load the persisted value
-        snapshotFlow { pagerState.currentPage }.drop(1).collect { page ->
+        // Use settledPage to only trigger when animation completes, avoiding intermediate values
+        snapshotFlow { pagerState.settledPage }.drop(1).collect { page ->
             onValueChange(values[page])
         }
     }
@@ -83,7 +83,7 @@ fun ScrollableDial(
     LaunchedEffect(currentSeconds) {
         val page = values.indexOf(currentSeconds).coerceAtLeast(0)
         if (page != pagerState.currentPage) {
-            pagerState.scrollToPage(page)
+            pagerState.animateScrollToPage(page)
         }
     }
 

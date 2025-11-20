@@ -8,5 +8,6 @@ data class Game(
     val date: String, // Date string
     val name: String = "",
     val customTypes: List<String> = emptyList(),
-    val playerTypes: List<String> = emptyList()
+    val playerTypes: List<String> = emptyList(),
+    val typeConfigurations: Map<String, Long> = emptyMap() // Map of Type Name -> Configured Time (millis)
 )

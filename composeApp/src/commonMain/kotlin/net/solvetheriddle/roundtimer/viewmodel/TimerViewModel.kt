@@ -92,14 +92,39 @@ class TimerViewModel : ViewModel() {
     fun updateConfiguredTime(seconds: Int) {
         if (!_state.value.isRunning) {
             val milliseconds = seconds * 1000L
-            _state.value = _state.value.copy(
+            
+            // Update state
+            var currentState = _state.value.copy(
                 configuredTime = milliseconds,
                 currentTime = milliseconds
             )
-            analyticsService.logEvent("configured_time_updated", mapOf("seconds" to seconds.toString()))
-            viewModelScope.launch {
-                storage.saveConfiguredTime(milliseconds)
+
+            // Update active game configuration
+            val activeGameId = currentState.activeGameId
+            if (activeGameId != null) {
+                val selectedType = currentState.selectedType
+                val updatedGames = currentState.games.map { game ->
+                    if (game.id == activeGameId) {
+                        val newConfigs = game.typeConfigurations.toMutableMap()
+                        newConfigs[selectedType] = milliseconds
+                        game.copy(typeConfigurations = newConfigs)
+                    } else {
+                        game
+                    }
+                }
+                currentState = currentState.copy(games = updatedGames)
+                viewModelScope.launch {
+                    storage.saveGames(updatedGames)
+                    storage.saveConfiguredTime(milliseconds)
+                }
+            } else {
+                viewModelScope.launch {
+                    storage.saveConfiguredTime(milliseconds)
+                }
             }
+            
+            _state.value = currentState
+            analyticsService.logEvent("configured_time_updated", mapOf("seconds" to seconds.toString()))
         }
     }
 
@@ -413,9 +438,10 @@ class TimerViewModel : ViewModel() {
             id = uuid(),
             date = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString(),
             name = name,
-            // Copy types from existing game if found, otherwise use defaults (empty)
+            // Copy types and configurations from existing game if found, otherwise use defaults
             customTypes = existingGame?.customTypes ?: emptyList(),
-            playerTypes = existingGame?.playerTypes ?: emptyList()
+            playerTypes = existingGame?.playerTypes ?: emptyList(),
+            typeConfigurations = existingGame?.typeConfigurations ?: emptyMap()
         )
         
         val updatedGames = listOf(newGame) + _state.value.games
@@ -440,7 +466,9 @@ class TimerViewModel : ViewModel() {
             activeGameId = gameId,
             customTypes = game?.customTypes ?: emptyList(),
             playerTypes = game?.playerTypes ?: emptyList(),
-            selectedType = "Preparation" // Reset selection when switching games
+            selectedType = "Preparation", // Reset selection when switching games
+            configuredTime = game?.typeConfigurations?.get("Preparation") ?: 150000L,
+            currentTime = game?.typeConfigurations?.get("Preparation") ?: 150000L
         )
         analyticsService.logEvent("active_game_changed", mapOf("game_id" to gameId))
         viewModelScope.launch {
@@ -528,7 +556,15 @@ class TimerViewModel : ViewModel() {
 
     // Category Management
     fun selectCategory(category: String) {
-        _state.value = _state.value.copy(selectedType = category)
+        val activeGameId = _state.value.activeGameId
+        val game = _state.value.games.find { it.id == activeGameId }
+        val configuredTime = game?.typeConfigurations?.get(category) ?: 150000L
+
+        _state.value = _state.value.copy(
+            selectedType = category,
+            configuredTime = configuredTime,
+            currentTime = configuredTime
+        )
         analyticsService.logEvent("select_category", mapOf("category" to category))
     }
 
