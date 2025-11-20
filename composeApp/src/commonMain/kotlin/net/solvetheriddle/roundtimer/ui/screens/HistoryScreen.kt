@@ -70,20 +70,31 @@ fun HistoryScreen(
     // Local state for category filter
     var selectedFilterCategory by remember { mutableStateOf("All") }
 
-    // Collect all unique categories from rounds plus defaults
-    val allCategories = remember(state.rounds) {
-        val categories = mutableSetOf("All", "Preparation", "Everyone")
-        state.rounds.forEach { categories.add(it.category) }
-        state.customTypes.forEach { categories.add(it) }
-        state.playerTypes.forEach { categories.add(it) }
+    // Collect all unique categories from rounds in the current game
+    val allCategories = remember(state.rounds, state.activeGameId) {
+        val categories = mutableSetOf<String>("All")
+        val gameRounds = if (state.activeGameId != null) {
+            state.rounds.filter { it.gameId == state.activeGameId }
+        } else {
+            state.rounds
+        }
+        gameRounds.forEach { categories.add(it.category) }
         categories.toList()
     }
 
-    val filteredRounds = remember(state.rounds, selectedFilterCategory) {
-        if (selectedFilterCategory == "All") {
-            state.rounds
+    val filteredRounds = remember(state.rounds, state.activeGameId, selectedFilterCategory) {
+        // First filter by active game
+        val gameRounds = if (state.activeGameId != null) {
+            state.rounds.filter { it.gameId == state.activeGameId }
         } else {
-            state.rounds.filter { it.category == selectedFilterCategory }
+            state.rounds
+        }
+        
+        // Then filter by category
+        if (selectedFilterCategory == "All") {
+            gameRounds
+        } else {
+            gameRounds.filter { it.category == selectedFilterCategory }
         }
     }
 
@@ -190,7 +201,7 @@ fun HistoryScreen(
                                 items = filteredRounds.reversed(),
                                 key = { it.id }
                             ) { round ->
-                                val typeRounds = state.rounds.filter { it.category == round.category }
+                                val typeRounds = state.rounds.filter { it.gameId == state.activeGameId && it.category == round.category }
                                 val typeIndex = typeRounds.indexOf(round) + 1
                                 SwipeableRoundItem(
                                     round = round,
@@ -235,7 +246,7 @@ fun HistoryScreen(
                                 items = filteredRounds.reversed(),
                                 key = { it.id }
                             ) { round ->
-                                val typeRounds = state.rounds.filter { it.category == round.category }
+                                val typeRounds = state.rounds.filter { it.gameId == state.activeGameId && it.category == round.category }
                                 val typeIndex = typeRounds.indexOf(round) + 1
                                 SwipeableRoundItem(
                                     round = round,
@@ -310,7 +321,7 @@ fun HistoryScreen(
 
 @Composable
 private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
-    var isExpanded by remember { mutableStateOf(true) }
+    var isExpanded by remember { mutableStateOf(false) }
     
     // Calculate statistics
     val totalRounds = rounds.size
@@ -559,7 +570,7 @@ private fun EditRoundDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Round") },
+        title = { Text("Edit round") },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -618,12 +629,12 @@ private fun EditRoundDialog(
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 TextButton(
                     onClick = onDelete,
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete")
+                    Text("Delete round")
                 }
                 Button(onClick = { onSave(timeSeconds, overtimeSeconds) }) {
                     Text("Save")

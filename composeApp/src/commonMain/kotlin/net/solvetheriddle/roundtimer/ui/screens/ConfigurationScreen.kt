@@ -132,7 +132,7 @@ fun ConfigurationScreen(
                             onRemovePlayerCategory = onRemovePlayerCategory,
                             onRenamePlayerCategory = onRenamePlayerCategory,
                             modifier = Modifier
-                                .padding(bottom = 24.dp)
+                                .padding(bottom = 24.dp, start = 16.dp)
                                 .width(cardSize) // Align width with card
                         )
                     }

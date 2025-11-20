@@ -1196,6 +1196,13 @@ if (state.isActiveCountdown()) { /* ... */ }
 3. **Skipping storage version**: Increment if state structure changes incompatibly
 4. **Breaking audio timing**: AudioScheduler is millisecond-precise, don't add delays
 5. **Ignoring platform differences**: Android ≠ iOS ≠ JVM ≠ Web
+6. **Time/Duration unit confusion**: 
+   - `Round.duration` and `Round.overtime` are stored in **seconds**
+   - `TimerState` time values (`configuredTime`, `currentTime`, `overtimeTime`) are in **milliseconds**
+   - When saving rounds, **always convert milliseconds to seconds** by dividing by 1000
+   - When stopping timer, save **elapsed time** (configured - remaining), not remaining time
+7. **Reinventing date formatting**: Use existing `getCurrentDate()` method for consistent date formatting across the app, don't use `.toString()` on date objects
+8. **Breaking existing helper methods**: Before writing new formatting/conversion logic, search for existing helper functions that might already do what you need
 
 ### Best Practices
 

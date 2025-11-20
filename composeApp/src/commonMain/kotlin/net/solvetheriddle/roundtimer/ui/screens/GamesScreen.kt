@@ -316,6 +316,12 @@ private fun NewGameDialog(
         title = { Text("Start new game", color = MaterialTheme.colorScheme.onBackground) },
         text = {
             Column {
+                Text(
+                    text = "Select a previous game to reuse its round types",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
                 Box {
                     OutlinedTextField(
                         value = nameState,
@@ -336,6 +342,13 @@ private fun NewGameDialog(
                         )
                     )
                     
+                    // Auto-expand dropdown when there are options to show
+                    LaunchedEffect(filteredOptions) {
+                        if (filteredOptions.isNotEmpty()) {
+                            expanded = true
+                        }
+                    }
+                    
                     DropdownMenu(
                         expanded = expanded && filteredOptions.isNotEmpty(),
                         onDismissRequest = { expanded = false },
@@ -355,12 +368,6 @@ private fun NewGameDialog(
                         }
                     }
                 }
-                Text(
-                    text = "Select a previous game to reuse its round types",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
             }
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()
@@ -405,7 +412,7 @@ private fun EditGameNameDialog(game: Game, onDismiss: () -> Unit, onSave: (Strin
                     onClick = onDelete,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.onError)
+                    Text("Delete game", color = MaterialTheme.colorScheme.onError)
                 }
                 Button(
                     onClick = { onSave(name) },

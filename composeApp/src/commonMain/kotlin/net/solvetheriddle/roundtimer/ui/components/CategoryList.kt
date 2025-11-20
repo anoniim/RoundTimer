@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -44,10 +45,10 @@ fun CategoryList(
             onRemoveCategory = onRemoveCustomCategory,
             onRenameCategory = onRenameCustomCategory,
             maxItems = 4,
-            addDialogTitle = "Add Round Type",
-            addDialogLabel = "Type Name",
-            editDialogTitle = "Edit Round Type",
-            editDialogLabel = "Type Name"
+            addDialogTitle = "Add round type",
+            addDialogLabel = "Round type",
+            editDialogTitle = "Edit round type",
+            editDialogLabel = "Round type"
         )
 
         // Row 2: Everyone + Player Categories
@@ -262,7 +263,7 @@ private fun AddCategoryButton(
             .combinedClickable(
                 onClick = { showDialog = true }
             ),
-        shape = RoundedCornerShape(8.dp),
+        shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
@@ -307,11 +308,6 @@ private fun AddCategoryDialog(
                 }
             ) {
                 Text("Add")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
             }
         }
     )
