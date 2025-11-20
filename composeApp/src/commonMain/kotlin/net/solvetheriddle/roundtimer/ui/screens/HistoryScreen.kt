@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +20,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -38,6 +42,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.ui.components.CategoryList
 import net.solvetheriddle.roundtimer.ui.components.SetAppropriateStatusBarColor
 import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 import kotlin.time.ExperimentalTime
@@ -53,62 +58,66 @@ fun HistoryScreen(
     onResetHistory: (String) -> Unit,
     formatTime: (Int) -> String
 ) {
-    val filteredRounds = state.rounds.filter { it.gameId == state.activeGameId }
+    val isLandscape = rememberIsLandscape()
+
+    // Local state for category filter
+    var selectedFilterCategory by remember { mutableStateOf("All") }
+
+    // Collect all unique categories from rounds plus defaults
+    val allCategories = remember(state.rounds) {
+        val categories = mutableSetOf("All", "Preparation", "Everyone")
+        state.rounds.forEach { categories.add(it.category) }
+        state.customCategories.forEach { categories.add(it) }
+        state.playerCategories.forEach { categories.add(it) }
+        categories.toList()
+    }
+
+    val filteredRounds = remember(state.rounds, selectedFilterCategory) {
+        if (selectedFilterCategory == "All") {
+            state.rounds
+        } else {
+            state.rounds.filter { it.category == selectedFilterCategory }
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var showResetDialog by remember { mutableStateOf(false) } // Added for reset dialog
 
     SetAppropriateStatusBarColor()
-
-    // Calculate statistics
-    val totalRounds = filteredRounds.size
-    val totalTime = filteredRounds.sumOf { it.duration }
-    val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
-    val shortestRound = if (totalRounds > 0) filteredRounds.minOf { it.duration } else 0
-    val longestRound = if (totalRounds > 0) filteredRounds.maxOf { it.duration } else 0
-    val isLandscape = rememberIsLandscape()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Round History") },
+                title = { Text("History") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    if (filteredRounds.isNotEmpty() && state.activeGameId != null) {
-                        TextButton(
-                            onClick = { onResetHistory(state.activeGameId!!) },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Text(
-                                text = "RESET",
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        if (isLandscape) {
-                            Spacer(modifier = Modifier.width(82.dp))
+                    if (state.activeGameId != null) {
+                        IconButton(onClick = { showResetDialog = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Reset History")
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
-    ) { innerPadding ->
+    ) { paddingValues ->
         val lazyListState = rememberLazyListState()
 
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
@@ -116,11 +125,10 @@ fun HistoryScreen(
                             MaterialTheme.colorScheme.background,
                         )
                     )
-                )
-                .padding(innerPadding),
+                ),
             contentAlignment = Alignment.TopCenter
         ) {
-            if (filteredRounds.isEmpty()) {
+            if (state.rounds.isEmpty()) {
                 // Empty state
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -143,170 +151,195 @@ fun HistoryScreen(
                         )
                     }
                 }
-            } else if (isLandscape) {
-                // Landscape: Split view
-                Row(
-                    modifier = Modifier
-                        .widthIn(max = 1200.dp)
-                        .fillMaxHeight()
-                        .padding(vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .widthIn(max = 400.dp)
-                            .fillMaxHeight()
-                            .padding(start = 84.dp)
-                    ) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.background
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp)
-                            ) {
-                                Text(
-                                    text = "Statistics",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                )
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    StatisticItem("Total rounds", totalRounds.toString())
-                                    StatisticItem("Total time", formatTime(totalTime))
-                                    StatisticItem("Fastest round", formatTime(shortestRound))
-                                    StatisticItem("Slowest round", formatTime(longestRound))
-                                    StatisticItem("Average time", formatTime(averageTime))
-                                }
-                            }
-                        }
-                    }
-
-                    // Right side: Recent Rounds
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .widthIn(max = 400.dp)
-                            .fillMaxHeight()
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            // Rounds list
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    state = lazyListState,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    contentPadding = PaddingValues(end = 84.dp)
-                                ) {
-                                    items(
-                                        items = filteredRounds,
-                                        key = { it.id }
-                                    ) { round ->
-                                        SwipeableRoundItem(
-                                            round = round,
-                                            roundNumber = state.rounds.indexOf(round) + 1,
-                                            onDelete = { 
-                                                onDeleteRound(round.id)
-                                                scope.launch {
-                                                    val result = snackbarHostState.showSnackbar(
-                                                        message = "Round deleted",
-                                                        actionLabel = "Undo"
-                                                    )
-                                                    if (result == SnackbarResult.ActionPerformed) {
-                                                        onUndoDelete()
-                                                    }
-                                                }
-                                            },
-                                            formatTime = formatTime
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             } else {
-                // Portrait: Vertical layout
-                Box(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        state = lazyListState,
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Statistics section
-                        item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.background
-                                ),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(20.dp)
-                                ) {
-                                    Text(
-                                        text = "Statistics",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(bottom = 12.dp)
-                                    )
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        StatisticItem("Total rounds", totalRounds.toString())
-                                        StatisticItem("Total time", formatTime(totalTime))
-                                        StatisticItem("Shortest round", formatTime(shortestRound))
-                                        StatisticItem("Longest round", formatTime(longestRound))
-                                        StatisticItem("Average time", formatTime(averageTime))
-                                    }
-                                }
-                            }
-                        }
-
-
-                        // Round items
-                        items(
-                            items = filteredRounds,
-                            key = { it.id }
-                        ) { round ->
-                            SwipeableRoundItem(
-                                round = round,
-                                roundNumber = state.rounds.indexOf(round) + 1,
-                                onDelete = { 
-                                    onDeleteRound(round.id)
-                                    scope.launch {
-                                        val result = snackbarHostState.showSnackbar(
-                                            message = "Round deleted",
-                                            actionLabel = "Undo"
-                                        )
-                                        if (result == SnackbarResult.ActionPerformed) {
-                                            onUndoDelete()
-                                        }
-                                    }
-                                },
-                                formatTime = formatTime
+                if (isLandscape) {
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        // Left side: Stats + Filter
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(16.dp)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            GameStats(filteredRounds, formatTime) // Use filteredRounds for stats
+                            Spacer(modifier = Modifier.height(16.dp))
+                            CategoryFilter(
+                                categories = allCategories,
+                                selectedCategory = selectedFilterCategory,
+                                onCategorySelected = { selectedFilterCategory = it }
                             )
                         }
+
+                        // Right side: Round List
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(
+                                items = filteredRounds.reversed(),
+                                key = { it.id }
+                            ) { round ->
+                                SwipeableRoundItem(
+                                    round = round,
+                                    roundNumber = state.rounds.indexOf(round) + 1,
+                                    onDelete = {
+                                        onDeleteRound(round.id)
+                                        scope.launch {
+                                            val result = snackbarHostState.showSnackbar(
+                                                message = "Round deleted",
+                                                actionLabel = "Undo"
+                                            )
+                                            if (result == SnackbarResult.ActionPerformed) {
+                                                onUndoDelete()
+                                            }
+                                        }
+                                    },
+                                    formatTime = formatTime
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Portrait
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            GameStats(filteredRounds, formatTime) // Use filteredRounds for stats
+                            Spacer(modifier = Modifier.height(16.dp))
+                            CategoryFilter(
+                                categories = allCategories,
+                                selectedCategory = selectedFilterCategory,
+                                onCategorySelected = { selectedFilterCategory = it }
+                            )
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(
+                                items = filteredRounds.reversed(),
+                                key = { it.id }
+                            ) { round ->
+                                SwipeableRoundItem(
+                                    round = round,
+                                    roundNumber = state.rounds.indexOf(round) + 1,
+                                    onDelete = {
+                                        onDeleteRound(round.id)
+                                        scope.launch {
+                                            val result = snackbarHostState.showSnackbar(
+                                                message = "Round deleted",
+                                                actionLabel = "Undo"
+                                            )
+                                            if (result == SnackbarResult.ActionPerformed) {
+                                                onUndoDelete()
+                                            }
+                                        }
+                                    },
+                                    formatTime = formatTime
+                                )
+                            }
+                        }
                     }
                 }
+            }
+        }
+        if (showResetDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetDialog = false },
+                title = { Text("Reset History") },
+                text = { Text("Are you sure you want to delete all rounds for this game? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        state.activeGameId?.let { onResetHistory(it) }
+                        showResetDialog = false
+                    }) {
+                        Text("Reset", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showResetDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
+    // Calculate statistics
+    val totalRounds = rounds.size
+    val totalTime = rounds.sumOf { it.duration }
+    val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
+    val shortestRound = if (totalRounds > 0) rounds.minOf { it.duration } else 0
+    val longestRound = if (totalRounds > 0) rounds.maxOf { it.duration } else 0
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.background
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Text(
+                text = "Statistics",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatisticItem("Total rounds", totalRounds.toString())
+                StatisticItem("Total time", formatTime(totalTime))
+                StatisticItem("Fastest round", formatTime(shortestRound))
+                StatisticItem("Slowest round", formatTime(longestRound))
+                StatisticItem("Average time", formatTime(averageTime))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CategoryFilter(
+    categories: List<String>,
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Filter by Category",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            categories.forEach { category ->
+                FilterChip(
+                    selected = category == selectedCategory,
+                    onClick = { onCategorySelected(category) },
+                    label = { Text(category) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
             }
         }
     }
@@ -347,7 +380,7 @@ private fun SwipeableRoundItem(
 ) {
     val density = LocalDensity.current
     val threshold = with(density) { 120.dp.toPx() }
-    
+
     val swipeableState = rememberSwipeToDismissBoxState(
         positionalThreshold = { totalDistance -> threshold },
         confirmValueChange = { dismissValue ->
@@ -427,40 +460,22 @@ private fun RoundItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left side: Round info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            // Left side: Round Number (now Category Name) and Time
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Round #$roundNumber",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    text = round.category, // Display category name as title
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Text(
-                    text = "at ${formatTimestamp(round.timestamp)}",
-                    fontSize = 12.sp,
+                    text = formatTime(round.duration), // Duration only
+                    fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.padding(top = 2.dp)
-                ) {
-                    Text(
-                        text = round.category,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
             }
-            
+
             // Right side: Total Duration (including overtime)
             Text(
                 text = formatTime(round.duration + round.overtime),
