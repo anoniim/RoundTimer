@@ -67,8 +67,8 @@ fun HistoryScreen(
     val allCategories = remember(state.rounds) {
         val categories = mutableSetOf("All", "Preparation", "Everyone")
         state.rounds.forEach { categories.add(it.category) }
-        state.customCategories.forEach { categories.add(it) }
-        state.playerCategories.forEach { categories.add(it) }
+        state.customTypes.forEach { categories.add(it) }
+        state.playerTypes.forEach { categories.add(it) }
         categories.toList()
     }
 
@@ -161,13 +161,13 @@ fun HistoryScreen(
                                 .padding(16.dp)
                                 .verticalScroll(rememberScrollState())
                         ) {
-                            GameStats(filteredRounds, formatTime) // Use filteredRounds for stats
-                            Spacer(modifier = Modifier.height(16.dp))
                             CategoryFilter(
                                 categories = allCategories,
                                 selectedCategory = selectedFilterCategory,
                                 onCategorySelected = { selectedFilterCategory = it }
                             )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            GameStats(filteredRounds, formatTime) // Use filteredRounds for stats
                         }
 
                         // Right side: Round List
@@ -182,9 +182,11 @@ fun HistoryScreen(
                                 items = filteredRounds.reversed(),
                                 key = { it.id }
                             ) { round ->
+                                val typeRounds = state.rounds.filter { it.category == round.category }
+                                val typeIndex = typeRounds.indexOf(round) + 1
                                 SwipeableRoundItem(
                                     round = round,
-                                    roundNumber = state.rounds.indexOf(round) + 1,
+                                    roundNumber = typeIndex, // Pass type index instead of global index
                                     onDelete = {
                                         onDeleteRound(round.id)
                                         scope.launch {
@@ -206,13 +208,13 @@ fun HistoryScreen(
                     // Portrait
                     Column(modifier = Modifier.fillMaxSize()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            GameStats(filteredRounds, formatTime) // Use filteredRounds for stats
-                            Spacer(modifier = Modifier.height(16.dp))
                             CategoryFilter(
                                 categories = allCategories,
                                 selectedCategory = selectedFilterCategory,
                                 onCategorySelected = { selectedFilterCategory = it }
                             )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            GameStats(filteredRounds, formatTime) // Use filteredRounds for stats
                         }
 
                         LazyColumn(
@@ -224,9 +226,11 @@ fun HistoryScreen(
                                 items = filteredRounds.reversed(),
                                 key = { it.id }
                             ) { round ->
+                                val typeRounds = state.rounds.filter { it.category == round.category }
+                                val typeIndex = typeRounds.indexOf(round) + 1
                                 SwipeableRoundItem(
                                     round = round,
-                                    roundNumber = state.rounds.indexOf(round) + 1,
+                                    roundNumber = typeIndex,
                                     onDelete = {
                                         onDeleteRound(round.id)
                                         scope.launch {
@@ -319,16 +323,10 @@ private fun CategoryFilter(
     onCategorySelected: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "Filter by Category",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             categories.forEach { category ->
                 FilterChip(
@@ -463,7 +461,7 @@ private fun RoundItem(
             // Left side: Round Number (now Category Name) and Time
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = round.category, // Display category name as title
+                    text = "${round.category} #$roundNumber", // Display category name and number
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface

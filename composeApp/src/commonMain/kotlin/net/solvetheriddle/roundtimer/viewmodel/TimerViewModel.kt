@@ -5,6 +5,7 @@ package net.solvetheriddle.roundtimer.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlin.time.Clock
+import kotlin.random.Random
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,9 +67,9 @@ class TimerViewModel : ViewModel() {
                         games = games,
                         activeGameId = activeGameId,
                         settings = savedSettings,
-                        // TODO: Load categories from storage if we decide to persist them
-                        // For now, we'll start with empty custom/player categories or defaults if needed
-                        // The request implies "Preparation" and "All players" are defaults, which are hardcoded in UI logic or State defaults
+                        // Load types from the active game
+                        customTypes = games.find { it.id == activeGameId }?.customTypes ?: emptyList(),
+                        playerTypes = games.find { it.id == activeGameId }?.playerTypes ?: emptyList()
                     )
 
                 } catch (e: Exception) {
@@ -284,18 +285,16 @@ class TimerViewModel : ViewModel() {
         val currentState = _state.value
         if (currentState.isRunning) {
             // Save round to history
-            val roundTimestamp = currentState.startTimestamp ?: Clock.System.now().toEpochMilliseconds()
-            val durationSeconds = ((currentState.configuredTime - currentState.currentTime + currentState.overtimeTime) / 1000).toInt()
-            val round = Round(
-                id = roundTimestamp.toString(),
-                duration = durationSeconds,
-                overtime = currentState.overtimeSeconds,
-                timestamp = roundTimestamp,
-                gameId = currentState.activeGameId!!,
-                category = currentState.selectedCategory
+            val newRound = Round(
+                id = uuid(),
+                duration = _state.value.currentTime.toInt(),
+                overtime = _state.value.overtimeTime.toInt(),
+                timestamp = Clock.System.now().toEpochMilliseconds(),
+                gameId = _state.value.activeGameId ?: "",
+                category = _state.value.selectedType
             )
 
-            val newRounds = currentState.rounds + round
+            val newRounds = currentState.rounds + newRound
             _state.value = currentState.copy(
                 isRunning = false,
                 isOvertime = false,
@@ -306,9 +305,9 @@ class TimerViewModel : ViewModel() {
 
             analyticsService.logEvent(
                 "timer_stopped", mapOf(
-                    "game_id" to currentState.activeGameId,
-                    "duration" to durationSeconds.toString(),
-                    "overtime" to round.overtime.toString()
+                    "game_id" to (currentState.activeGameId ?: ""),
+                    "duration" to newRound.duration.toString(),
+                    "overtime" to newRound.overtime.toString()
                 )
             )
             // Save to storage asynchronously
@@ -407,20 +406,42 @@ class TimerViewModel : ViewModel() {
         )
     }
 
-    fun createNewGame(name: String = "") {
-        val newGame = Game(id = Clock.System.now().toEpochMilliseconds().toString(), date = getCurrentDate(), name = name)
-        val newGames = (_state.value.games + newGame).sortedByDescending { it.id }
-        _state.value = _state.value.copy(games = newGames, activeGameId = newGame.id)
-        analyticsService.logEvent(
-            "game_created_manually", mapOf("game_id" to newGame.id, "game_date" to newGame.date, "game_name" to newGame.name)
+    fun createNewGame(name: String) {
+        val existingGame = _state.value.games.find { it.name.equals(name, ignoreCase = true) }
+        
+        val newGame = Game(
+            id = uuid(),
+            date = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString(),
+            name = name,
+            // Copy types from existing game if found, otherwise use defaults (empty)
+            customTypes = existingGame?.customTypes ?: emptyList(),
+            playerTypes = existingGame?.playerTypes ?: emptyList()
         )
+        
+        val updatedGames = listOf(newGame) + _state.value.games
+        _state.value = _state.value.copy(
+            games = updatedGames,
+            activeGameId = newGame.id,
+            customTypes = newGame.customTypes,
+            playerTypes = newGame.playerTypes,
+            selectedType = "Preparation"
+        )
+        
         viewModelScope.launch {
-            storage.saveGames(newGames)
+            storage.saveGames(updatedGames)
+            storage.saveActiveGameId(newGame.id)
         }
+        analyticsService.logEvent("create_new_game", mapOf("name" to name))
     }
 
     fun setActiveGame(gameId: String) {
-        _state.value = _state.value.copy(activeGameId = gameId)
+        val game = _state.value.games.find { it.id == gameId }
+        _state.value = _state.value.copy(
+            activeGameId = gameId,
+            customTypes = game?.customTypes ?: emptyList(),
+            playerTypes = game?.playerTypes ?: emptyList(),
+            selectedType = "Preparation" // Reset selection when switching games
+        )
         analyticsService.logEvent("active_game_changed", mapOf("game_id" to gameId))
         viewModelScope.launch {
             storage.saveActiveGameId(gameId)
@@ -505,74 +526,78 @@ class TimerViewModel : ViewModel() {
         }
     }
 
+    // Category Management
     fun selectCategory(category: String) {
-        _state.value = _state.value.copy(selectedCategory = category)
-        analyticsService.logEvent("category_selected", mapOf("category" to category))
+        _state.value = _state.value.copy(selectedType = category)
+        analyticsService.logEvent("select_category", mapOf("category" to category))
     }
 
     fun addCustomCategory(category: String) {
-        val currentCategories = _state.value.customCategories
-        if (!currentCategories.contains(category)) {
-            val newCategories = currentCategories + category
-            _state.value = _state.value.copy(customCategories = newCategories)
-            analyticsService.logEvent("custom_category_added", mapOf("category" to category))
-            // TODO: Persist categories
-        }
+        val newTypes = _state.value.customTypes + category
+        _state.value = _state.value.copy(customTypes = newTypes)
+        updateActiveGameTypes(newTypes, _state.value.playerTypes)
+        analyticsService.logEvent("add_custom_category", mapOf("category" to category))
     }
 
     fun removeCustomCategory(category: String) {
-        val newCategories = _state.value.customCategories - category
-        _state.value = _state.value.copy(customCategories = newCategories)
-        if (_state.value.selectedCategory == category) {
-            _state.value = _state.value.copy(selectedCategory = "Preparation")
-        }
-        analyticsService.logEvent("custom_category_removed", mapOf("category" to category))
-        // TODO: Persist categories
+        val newTypes = _state.value.customTypes - category
+        _state.value = _state.value.copy(
+            customTypes = newTypes,
+            selectedType = if (_state.value.selectedType == category) "Preparation" else _state.value.selectedType
+        )
+        updateActiveGameTypes(newTypes, _state.value.playerTypes)
+        analyticsService.logEvent("remove_custom_category", mapOf("category" to category))
     }
 
     fun addPlayerCategory(player: String) {
-        val currentPlayers = _state.value.playerCategories
-        if (!currentPlayers.contains(player)) {
-            val newPlayers = currentPlayers + player
-            _state.value = _state.value.copy(playerCategories = newPlayers)
-            analyticsService.logEvent("player_category_added", mapOf("player" to player))
-            // TODO: Persist categories
-        }
+        val newTypes = _state.value.playerTypes + player
+        _state.value = _state.value.copy(playerTypes = newTypes)
+        updateActiveGameTypes(_state.value.customTypes, newTypes)
+        analyticsService.logEvent("add_player_category", mapOf("category" to player))
     }
 
     fun removePlayerCategory(player: String) {
-        val newPlayers = _state.value.playerCategories - player
-        _state.value = _state.value.copy(playerCategories = newPlayers)
-        if (_state.value.selectedCategory == player) {
-            _state.value = _state.value.copy(selectedCategory = "Preparation")
-        }
-        analyticsService.logEvent("player_category_removed", mapOf("player" to player))
-        // TODO: Persist categories
+        val newTypes = _state.value.playerTypes - player
+        _state.value = _state.value.copy(
+            playerTypes = newTypes,
+            selectedType = if (_state.value.selectedType == player) "Everyone" else _state.value.selectedType
+        )
+        updateActiveGameTypes(_state.value.customTypes, newTypes)
+        analyticsService.logEvent("remove_player_category", mapOf("category" to player))
     }
 
     fun renameCustomCategory(oldName: String, newName: String) {
-        val currentCategories = _state.value.customCategories
-        if (currentCategories.contains(oldName) && !currentCategories.contains(newName)) {
-            val newCategories = currentCategories.map { if (it == oldName) newName else it }
-            _state.value = _state.value.copy(
-                customCategories = newCategories,
-                selectedCategory = if (_state.value.selectedCategory == oldName) newName else _state.value.selectedCategory
-            )
-            analyticsService.logEvent("custom_category_renamed", mapOf("old_name" to oldName, "new_name" to newName))
-            // TODO: Persist categories
-        }
+        val newTypes = _state.value.customTypes.map { if (it == oldName) newName else it }
+        _state.value = _state.value.copy(
+            customTypes = newTypes,
+            selectedType = if (_state.value.selectedType == oldName) newName else _state.value.selectedType
+        )
+        updateActiveGameTypes(newTypes, _state.value.playerTypes)
+        analyticsService.logEvent("rename_custom_category", mapOf("oldName" to oldName, "newName" to newName))
     }
 
     fun renamePlayerCategory(oldName: String, newName: String) {
-        val currentPlayers = _state.value.playerCategories
-        if (currentPlayers.contains(oldName) && !currentPlayers.contains(newName)) {
-            val newPlayers = currentPlayers.map { if (it == oldName) newName else it }
-            _state.value = _state.value.copy(
-                playerCategories = newPlayers,
-                selectedCategory = if (_state.value.selectedCategory == oldName) newName else _state.value.selectedCategory
-            )
-            analyticsService.logEvent("player_category_renamed", mapOf("old_name" to oldName, "new_name" to newName))
-            // TODO: Persist categories
+        val newTypes = _state.value.playerTypes.map { if (it == oldName) newName else it }
+        _state.value = _state.value.copy(
+            playerTypes = newTypes,
+            selectedType = if (_state.value.selectedType == oldName) newName else _state.value.selectedType
+        )
+        updateActiveGameTypes(_state.value.customTypes, newTypes)
+        analyticsService.logEvent("rename_player_category", mapOf("oldName" to oldName, "newName" to newName))
+    }
+
+    private fun updateActiveGameTypes(customTypes: List<String>, playerTypes: List<String>) {
+        val activeGameId = _state.value.activeGameId ?: return
+        val updatedGames = _state.value.games.map { game ->
+            if (game.id == activeGameId) {
+                game.copy(customTypes = customTypes, playerTypes = playerTypes)
+            } else {
+                game
+            }
+        }
+        _state.value = _state.value.copy(games = updatedGames)
+        viewModelScope.launch {
+            storage.saveGames(updatedGames)
         }
     }
 
@@ -581,5 +606,15 @@ class TimerViewModel : ViewModel() {
         timerJob?.cancel()
         audioScheduler.stop()
         soundPlayer.cleanup()
+    }
+
+    private fun uuid(): String {
+        val charPool = "0123456789abcdef"
+        return (1..32)
+            .map { charPool[Random.nextInt(0, charPool.length)] }
+            .joinToString("")
+            .let { 
+                "${it.substring(0, 8)}-${it.substring(8, 12)}-${it.substring(12, 16)}-${it.substring(16, 20)}-${it.substring(20, 32)}"
+            }
     }
 }

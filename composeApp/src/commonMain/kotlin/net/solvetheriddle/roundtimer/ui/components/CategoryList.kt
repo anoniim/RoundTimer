@@ -43,7 +43,11 @@ fun CategoryList(
             onAddCategory = onAddCustomCategory,
             onRemoveCategory = onRemoveCustomCategory,
             onRenameCategory = onRenameCustomCategory,
-            maxItems = 4
+            maxItems = 4,
+            addDialogTitle = "Add Round Type",
+            addDialogLabel = "Type Name",
+            editDialogTitle = "Edit Round Type",
+            editDialogLabel = "Type Name"
         )
 
         // Row 2: Everyone + Player Categories
@@ -55,7 +59,11 @@ fun CategoryList(
             onAddCategory = onAddPlayerCategory,
             onRemoveCategory = onRemovePlayerCategory,
             onRenameCategory = onRenamePlayerCategory,
-            maxItems = 4
+            maxItems = 4,
+            addDialogTitle = "Add player",
+            addDialogLabel = "Player name",
+            editDialogTitle = "Edit player",
+            editDialogLabel = "Player name"
         )
     }
 }
@@ -69,7 +77,12 @@ private fun CategoryRow(
     onAddCategory: (String) -> Unit,
     onRemoveCategory: (String) -> Unit,
     onRenameCategory: (String, String) -> Unit,
-    maxItems: Int
+
+    maxItems: Int,
+    addDialogTitle: String,
+    addDialogLabel: String,
+    editDialogTitle: String,
+    editDialogLabel: String
 ) {
     // We need to handle wrapping if items exceed maxItems per row
     // But the requirement says "When the maximum number in a row is reached, a new row is added below."
@@ -119,7 +132,9 @@ private fun CategoryRow(
                     },
                     isEditable = category != fixedCategory,
                     onRemove = { onRemoveCategory(category) },
-                    onRename = { newName -> onRenameCategory(category, newName) }
+                    onRename = { newName -> onRenameCategory(category, newName) },
+                    editDialogTitle = editDialogTitle,
+                    editDialogLabel = editDialogLabel
                 )
             }
             
@@ -131,7 +146,11 @@ private fun CategoryRow(
             
             if (index == chunks.lastIndex) {
                 if (chunk.size < 4) {
-                    AddCategoryButton(onAdd = onAddCategory)
+                    AddCategoryButton(
+                        onAdd = onAddCategory,
+                        dialogTitle = addDialogTitle,
+                        dialogLabel = addDialogLabel
+                    )
                 }
             }
         }
@@ -143,7 +162,11 @@ private fun CategoryRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AddCategoryButton(onAdd = onAddCategory)
+                AddCategoryButton(
+                    onAdd = onAddCategory,
+                    dialogTitle = addDialogTitle,
+                    dialogLabel = addDialogLabel
+                )
             }
         }
     }
@@ -161,7 +184,9 @@ private fun CategoryChip(
     onLongClick: () -> Unit,
     isEditable: Boolean,
     onRemove: () -> Unit,
-    onRename: (String) -> Unit
+    onRename: (String) -> Unit,
+    editDialogTitle: String,
+    editDialogLabel: String
 ) {
     var showDialog by remember { mutableStateOf(false) }
     
@@ -176,7 +201,9 @@ private fun CategoryChip(
             onDelete = {
                 onRemove()
                 showDialog = false
-            }
+            },
+            title = editDialogTitle,
+            label = editDialogLabel
         )
     }
 
@@ -211,7 +238,9 @@ private fun CategoryChip(
 
 @Composable
 private fun AddCategoryButton(
-    onAdd: (String) -> Unit
+    onAdd: (String) -> Unit,
+    dialogTitle: String,
+    dialogLabel: String
 ) {
     var showDialog by remember { mutableStateOf(false) }
     
@@ -221,7 +250,9 @@ private fun AddCategoryButton(
             onConfirm = { name ->
                 onAdd(name)
                 showDialog = false
-            }
+            },
+            title = dialogTitle,
+            label = dialogLabel
         )
     }
 
@@ -240,7 +271,7 @@ private fun AddCategoryButton(
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Add Category",
+                contentDescription = "Add Round Type",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -250,18 +281,20 @@ private fun AddCategoryButton(
 @Composable
 private fun AddCategoryDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
+    title: String,
+    label: String
 ) {
     var text by remember { mutableStateOf("") }
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Category") },
+        title = { Text(title) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("Category Name") },
+                label = { Text(label) },
                 singleLine = true
             )
         },
@@ -289,19 +322,21 @@ private fun EditCategoryDialog(
     initialName: String,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    title: String,
+    label: String
 ) {
     var text by remember { mutableStateOf(initialName) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Category") },
+        title = { Text(title) },
         text = {
             Column {
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text("Category Name") },
+                    label = { Text(label) },
                     singleLine = true
                 )
             }

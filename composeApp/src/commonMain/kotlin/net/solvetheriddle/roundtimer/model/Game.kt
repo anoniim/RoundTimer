@@ -6,5 +6,7 @@ import kotlinx.serialization.Serializable
 data class Game(
     val id: String, // Unique ID
     val date: String, // Date string
-    val name: String = ""
+    val name: String = "",
+    val customTypes: List<String> = emptyList(),
+    val playerTypes: List<String> = emptyList()
 )

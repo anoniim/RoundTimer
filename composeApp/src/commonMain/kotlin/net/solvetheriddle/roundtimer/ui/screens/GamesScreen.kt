@@ -40,6 +40,8 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -114,6 +116,7 @@ fun GamesScreen(
 
     if (showNewGameDialog) {
         NewGameDialog(
+            existingGameNames = state.games.map { it.name }.filter { it.isNotEmpty() }.distinct(),
             onDismiss = { showNewGameDialog = false },
             onStart = { name ->
                 onCreateNewGame(name)
@@ -294,29 +297,70 @@ fun GamesScreen(
 }
 
 @Composable
-private fun NewGameDialog(onDismiss: () -> Unit, onStart: (String) -> Unit) {
+private fun NewGameDialog(
+    existingGameNames: List<String>,
+    onDismiss: () -> Unit, 
+    onStart: (String) -> Unit
+) {
     var name by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
+    var expanded by remember { mutableStateOf(false) }
+    
+    val filteredOptions = remember(name, existingGameNames) {
+        if (name.isBlank()) emptyList()
+        else existingGameNames.filter { it.contains(name, ignoreCase = true) && !it.equals(name, ignoreCase = true) }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Start new game", color = MaterialTheme.colorScheme.onBackground) },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Game name (optional)") },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { onStart(name) }),
-                modifier = Modifier.focusRequester(focusRequester),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.primary,
-                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
-                )
-            )
+            Column {
+                Box {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { 
+                            name = it 
+                            expanded = true
+                        },
+                        label = { Text("Game name (optional)") },
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { onStart(name) }),
+                        modifier = Modifier.focusRequester(focusRequester).fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        )
+                    )
+                    
+                    DropdownMenu(
+                        expanded = expanded && filteredOptions.isNotEmpty(),
+                        onDismissRequest = { expanded = false },
+                        properties = androidx.compose.ui.window.PopupProperties(focusable = false)
+                    ) {
+                        filteredOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    name = option
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                if (filteredOptions.isNotEmpty()) {
+                    Text(
+                        text = "Select a previous game to reuse its round types",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()
             }
