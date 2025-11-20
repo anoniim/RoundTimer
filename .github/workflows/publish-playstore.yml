@@ -1,4 +1,5 @@
-name: Tag ${{ github.event.inputs.tagName }} and Publish to Play Store
+name: Tag and Publish to Play Store
+run-name: Tag ${{ github.event.inputs.tagName }} and Publish to Play Store
 
 on:
   workflow_dispatch:
