@@ -302,13 +302,13 @@ private fun NewGameDialog(
     onDismiss: () -> Unit, 
     onStart: (String) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
+    var nameState by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
     var expanded by remember { mutableStateOf(false) }
     
-    val filteredOptions = remember(name, existingGameNames) {
-        if (name.isBlank()) emptyList()
-        else existingGameNames.filter { it.contains(name, ignoreCase = true) && !it.equals(name, ignoreCase = true) }
+    val filteredOptions = remember(nameState.text, existingGameNames) {
+        if (nameState.text.isBlank()) existingGameNames
+        else existingGameNames.filter { it.contains(nameState.text, ignoreCase = true) && !it.equals(nameState.text, ignoreCase = true) }
     }
 
     AlertDialog(
@@ -318,14 +318,14 @@ private fun NewGameDialog(
             Column {
                 Box {
                     OutlinedTextField(
-                        value = name,
+                        value = nameState,
                         onValueChange = { 
-                            name = it 
+                            nameState = it 
                             expanded = true
                         },
                         label = { Text("Game name (optional)") },
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { onStart(name) }),
+                        keyboardActions = KeyboardActions(onDone = { onStart(nameState.text) }),
                         modifier = Modifier.focusRequester(focusRequester).fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = MaterialTheme.colorScheme.onBackground,
@@ -345,28 +345,29 @@ private fun NewGameDialog(
                             DropdownMenuItem(
                                 text = { Text(option) },
                                 onClick = {
-                                    name = option
+                                    nameState = androidx.compose.ui.text.input.TextFieldValue(
+                                        text = option,
+                                        selection = androidx.compose.ui.text.TextRange(option.length)
+                                    )
                                     expanded = false
                                 }
                             )
                         }
                     }
                 }
-                if (filteredOptions.isNotEmpty()) {
-                    Text(
-                        text = "Select a previous game to reuse its round types",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
+                Text(
+                    text = "Select a previous game to reuse its round types",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()
             }
         },
         confirmButton = {
-            Button(onClick = { onStart(name) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+            Button(onClick = { onStart(nameState.text) }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
                 Text("START", color = MaterialTheme.colorScheme.onPrimary)
             }
         },

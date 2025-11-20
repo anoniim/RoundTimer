@@ -309,16 +309,19 @@ class TimerViewModel : ViewModel() {
 
         val currentState = _state.value
         if (currentState.isRunning) {
-            // Save round to history
-            val newRound = Round(
-                id = uuid(),
-                duration = _state.value.currentTime.toInt(),
-                overtime = _state.value.overtimeTime.toInt(),
-                timestamp = Clock.System.now().toEpochMilliseconds(),
-                gameId = _state.value.activeGameId ?: "",
-                category = _state.value.selectedType
-            )
-
+        // Calculate elapsed time from configured time minus remaining time
+        val elapsedTime = (currentState.configuredTime - currentState.currentTime) / 1000 // Convert to seconds
+        val overtimeTime = currentState.overtimeTime / 1000 // Convert to seconds
+        
+        // Save round to history
+        val newRound = Round(
+            id = uuid(),
+            duration = elapsedTime.toInt(),
+            overtime = overtimeTime.toInt(),
+            timestamp = Clock.System.now().toEpochMilliseconds(),
+            gameId = _state.value.activeGameId ?: "",
+            category = _state.value.selectedType
+        )
             val newRounds = currentState.rounds + newRound
             _state.value = currentState.copy(
                 isRunning = false,
@@ -368,6 +371,26 @@ class TimerViewModel : ViewModel() {
             analyticsService.logEvent("round_delete_undone", mapOf("game_id" to it.gameId))
             viewModelScope.launch {
                 storage.saveRounds(newRounds)
+            }
+        }
+    }
+
+    fun updateRound(roundId: String, newDuration: Int, newOvertime: Int) {
+        val currentState = _state.value
+        val updatedRounds = currentState.rounds.map { round ->
+            if (round.id == roundId) {
+                round.copy(duration = newDuration, overtime = newOvertime)
+            } else {
+                round
+            }
+        }
+        _state.value = currentState.copy(rounds = updatedRounds)
+        analyticsService.logEvent("round_updated", mapOf("round_id" to roundId, "duration" to newDuration.toString()))
+        viewModelScope.launch {
+            try {
+                storage.saveRounds(updatedRounds)
+            } catch (e: Exception) {
+                // Storage save failed, but continue with UI update
             }
         }
     }
@@ -436,7 +459,7 @@ class TimerViewModel : ViewModel() {
         
         val newGame = Game(
             id = uuid(),
-            date = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString(),
+            date = getCurrentDate(),
             name = name,
             // Copy types and configurations from existing game if found, otherwise use defaults
             customTypes = existingGame?.customTypes ?: emptyList(),

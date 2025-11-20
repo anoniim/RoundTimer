@@ -26,6 +26,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.foundation.clickable
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,6 +62,7 @@ fun HistoryScreen(
     onDeleteRound: (String) -> Unit,
     onUndoDelete: () -> Unit,
     onResetHistory: (String) -> Unit,
+    onUpdateRound: (String, Int, Int) -> Unit,
     formatTime: (Int) -> String
 ) {
     val isLandscape = rememberIsLandscape()
@@ -83,6 +90,7 @@ fun HistoryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showResetDialog by remember { mutableStateOf(false) } // Added for reset dialog
+    var editingRound by remember { mutableStateOf<Round?>(null) }
 
     SetAppropriateStatusBarColor()
 
@@ -199,6 +207,7 @@ fun HistoryScreen(
                                             }
                                         }
                                     },
+                                    onLongClick = { editingRound = round },
                                     formatTime = formatTime
                                 )
                             }
@@ -243,6 +252,7 @@ fun HistoryScreen(
                                             }
                                         }
                                     },
+                                    onLongClick = { editingRound = round },
                                     formatTime = formatTime
                                 )
                             }
@@ -271,11 +281,37 @@ fun HistoryScreen(
                 }
             )
         }
+        editingRound?.let { round ->
+            EditRoundDialog(
+                round = round,
+                formatTime = formatTime,
+                onDismiss = { editingRound = null },
+                onSave = { newDuration, newOvertime ->
+                    onUpdateRound(round.id, newDuration, newOvertime)
+                    editingRound = null
+                },
+                onDelete = {
+                    onDeleteRound(round.id)
+                    editingRound = null
+                    scope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = "Round deleted",
+                            actionLabel = "Undo"
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            onUndoDelete()
+                        }
+                    }
+                }
+            )
+        }
     }
 }
 
 @Composable
 private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
+    var isExpanded by remember { mutableStateOf(true) }
+    
     // Calculate statistics
     val totalRounds = rounds.size
     val totalTime = rounds.sumOf { it.duration }
@@ -284,7 +320,10 @@ private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
     val longestRound = if (totalRounds > 0) rounds.maxOf { it.duration } else 0
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded }
+            .animateContentSize(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.background
         ),
@@ -295,21 +334,34 @@ private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            Text(
-                text = "Statistics",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            Column(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                StatisticItem("Total rounds", totalRounds.toString())
-                StatisticItem("Total time", formatTime(totalTime))
-                StatisticItem("Fastest round", formatTime(shortestRound))
-                StatisticItem("Slowest round", formatTime(longestRound))
-                StatisticItem("Average time", formatTime(averageTime))
+                Text(
+                    text = "Statistics",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    StatisticItem("Total rounds", totalRounds.toString())
+                    StatisticItem("Total time", formatTime(totalTime))
+                    StatisticItem("Fastest round", formatTime(shortestRound))
+                    StatisticItem("Slowest round", formatTime(longestRound))
+                    StatisticItem("Average time", formatTime(averageTime))
+                }
             }
         }
     }
@@ -374,6 +426,7 @@ private fun SwipeableRoundItem(
     round: Round,
     roundNumber: Int,
     onDelete: () -> Unit,
+    onLongClick: () -> Unit,
     formatTime: (Int) -> String
 ) {
     val density = LocalDensity.current
@@ -431,20 +484,28 @@ private fun SwipeableRoundItem(
             RoundItem(
                 round = round,
                 roundNumber = roundNumber,
+                onLongClick = onLongClick,
                 formatTime = formatTime
             )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RoundItem(
     round: Round,
     roundNumber: Int,
+    onLongClick: () -> Unit,
     formatTime: (Int) -> String
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -483,6 +544,93 @@ private fun RoundItem(
             )
         }
     }
+}
+
+@Composable
+private fun EditRoundDialog(
+    round: Round,
+    formatTime: (Int) -> String,
+    onDismiss: () -> Unit,
+    onSave: (Int, Int) -> Unit,
+    onDelete: () -> Unit
+) {
+    var timeSeconds by remember { mutableStateOf(round.duration) }
+    var overtimeSeconds by remember { mutableStateOf(round.overtime) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Round") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Duration editing
+                Column {
+                    Text(
+                        text = "Duration",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        IconButton(onClick = { timeSeconds = maxOf(0, timeSeconds - 5) }) {
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Decrease")
+                        }
+                        Text(
+                            text = formatTime(timeSeconds),
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.weight(1f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        IconButton(onClick = { timeSeconds += 5 }) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Increase")
+                        }
+                    }
+                }
+                
+                // Overtime editing
+                Column {
+                    Text(
+                        text = "Overtime",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        IconButton(onClick = { overtimeSeconds = maxOf(0, overtimeSeconds - 5) }) {
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Decrease")
+                        }
+                        Text(
+                            text = formatTime(overtimeSeconds),
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.weight(1f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        IconButton(onClick = { overtimeSeconds += 5 }) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Increase")
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+                Button(onClick = { onSave(timeSeconds, overtimeSeconds) }) {
+                    Text("Save")
+                }
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalTime::class)

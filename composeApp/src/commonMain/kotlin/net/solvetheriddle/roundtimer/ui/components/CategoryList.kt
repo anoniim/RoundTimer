@@ -349,20 +349,7 @@ private fun EditCategoryDialog(
                     }
                 }
             ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            Row {
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Delete")
-                }
-                TextButton(onClick = onDismiss) {
-                    Text("Cancel")
-                }
+                Text("Rename")
             }
         }
     )

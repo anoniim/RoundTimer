@@ -91,6 +91,7 @@ fun App() {
                         onDeleteRound = viewModel::deleteRound,
                         onUndoDelete = viewModel::undoDeleteRound,
                         onResetHistory = viewModel::resetHistoryForGame,
+                        onUpdateRound = viewModel::updateRound,
                         formatTime = viewModel::formatTime
                     )
                 }
