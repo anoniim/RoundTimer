@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,13 +22,15 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun CategoryList(
-    selectedCategory: String,
-    customCategories: List<String>,
+    selectedPhase: String,
+    selectedPlayer: String,
+    customPhases: List<String>,
     playerCategories: List<String>,
-    onCategorySelect: (String) -> Unit,
-    onAddCustomCategory: (String) -> Unit,
-    onRemoveCustomCategory: (String) -> Unit,
-    onRenameCustomCategory: (String, String) -> Unit,
+    onPhaseSelect: (String) -> Unit,
+    onPlayerSelect: (String) -> Unit,
+    onAddCustomPhase: (String) -> Unit,
+    onRemoveCustomPhase: (String) -> Unit,
+    onRenameCustomPhase: (String, String) -> Unit,
     onAddPlayerCategory: (String) -> Unit,
     onRemovePlayerCategory: (String) -> Unit,
     onRenamePlayerCategory: (String, String) -> Unit,
@@ -36,151 +39,134 @@ fun CategoryList(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp) // Unified spacing between sections
     ) {
-        // Row 1: Preparation + Custom Categories
-        CategoryRow(
-            fixedCategory = "Preparation",
-            dynamicCategories = customCategories,
-            selectedCategory = selectedCategory,
-            onCategorySelect = onCategorySelect,
-            onAddCategory = onAddCustomCategory,
-            onRemoveCategory = onRemoveCustomCategory,
-            onRenameCategory = onRenameCustomCategory,
-            maxItems = 4,
-            addDialogTitle = "Add round type",
-            addDialogLabel = "Round type",
-            editDialogTitle = "Edit round type",
-            editDialogLabel = "Round type"
+        // Phase Section
+        PhaseSection(
+            fixedPhase = "Setup",
+            customPhases = customPhases,
+            selectedPhase = selectedPhase,
+            onPhaseSelect = onPhaseSelect,
+            onAddPhase = onAddCustomPhase,
+            onRemovePhase = onRemoveCustomPhase,
+            onRenamePhase = onRenameCustomPhase
         )
 
-        // Row 2: Everyone + Player Categories
-        CategoryRow(
-            fixedCategory = "Everyone",
-            dynamicCategories = playerCategories,
-            selectedCategory = selectedCategory,
-            onCategorySelect = onCategorySelect,
-            onAddCategory = onAddPlayerCategory,
-            onRemoveCategory = onRemovePlayerCategory,
-            onRenameCategory = onRenamePlayerCategory,
-            maxItems = 4,
-            addDialogTitle = "Add player",
-            addDialogLabel = "Player name",
-            editDialogTitle = "Edit player",
-            editDialogLabel = "Player name",
+        // Player Section
+        PlayerSection(
+            fixedPlayer = "Everyone",
+            players = playerCategories,
+            selectedPlayer = selectedPlayer,
+            onPlayerSelect = onPlayerSelect,
+            onAddPlayer = onAddPlayerCategory,
+            onRemovePlayer = onRemovePlayerCategory,
+            onRenamePlayer = onRenamePlayerCategory,
             suggestions = playerSuggestions
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CategoryRow(
-    fixedCategory: String,
-    dynamicCategories: List<String>,
-    selectedCategory: String,
-    onCategorySelect: (String) -> Unit,
-    onAddCategory: (String) -> Unit,
-    onRemoveCategory: (String) -> Unit,
-    onRenameCategory: (String, String) -> Unit,
-
-    maxItems: Int,
-    addDialogTitle: String,
-    addDialogLabel: String,
-    editDialogTitle: String,
-    editDialogLabel: String,
-    suggestions: List<String> = emptyList()
+private fun PhaseSection(
+    fixedPhase: String,
+    customPhases: List<String>,
+    selectedPhase: String,
+    onPhaseSelect: (String) -> Unit,
+    onAddPhase: (String) -> Unit,
+    onRemovePhase: (String) -> Unit,
+    onRenamePhase: (String, String) -> Unit
 ) {
-    // We need to handle wrapping if items exceed maxItems per row
-    // But the requirement says "When the maximum number in a row is reached, a new row is added below."
-    // So we'll just use a FlowRow-like logic or simply multiple rows if needed.
-    // For simplicity, let's chunk the dynamic categories.
-    
-    val allItems = listOf(fixedCategory) + dynamicCategories
-    val rows = allItems.chunked(maxItems + 1) // +1 because we have the fixed category in the first chunk effectively, wait.
-    // Actually, "Preparation" is 1 item. Custom categories are added.
-    // "1st row: Preparation, custom (none initially, any number can be added by a '+' button)"
-    // "The user adds custom categories and players by clicking a '+' button (up to 4 in one row). Clicking + button adds a new label to the row. When the maximum number in a row is reached, a new row is added below."
-    
-    // Let's treat the fixed category as just the first item of the first row.
-    // And we append the "+" button at the end of the last row if there's space, or new row.
-    
-    // Let's construct the list of items to display including the add button logic visually
-    
-    val itemsToDisplay = ArrayList<String>()
-    itemsToDisplay.add(fixedCategory)
-    itemsToDisplay.addAll(dynamicCategories)
-    
-    // Chunking
-    // We want max 4 items per row? "up to 4 in one row"
-    // Let's assume 4 items MAX per row including the fixed one for the first row.
-    
-    val chunks = itemsToDisplay.chunked(4)
-    
-    chunks.forEachIndexed { index, chunk ->
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            chunk.forEach { category ->
-                CategoryChip(
-                    label = category,
-                    isSelected = category == selectedCategory,
-                    onClick = { onCategorySelect(category) },
-                    onLongClick = {
-                        if (category != fixedCategory) {
-                            // Show edit/delete dialog
-                            // We need to handle this via a callback that opens a dialog
-                            // For now, let's just pass the category to a handler that might show a dialog
-                            // But wait, we need to know if it's a rename or delete.
-                            // We can pass a "onEdit" callback.
-                        }
-                    },
-                    isEditable = category != fixedCategory,
-                    onRemove = { onRemoveCategory(category) },
-                    onRename = { newName -> onRenameCategory(category, newName) },
-                    editDialogTitle = editDialogTitle,
-                    editDialogLabel = editDialogLabel
-                )
-            }
-            
-            // Add button logic
-            // If this is the last chunk and it has less than 4 items, we add the + button here.
-            // OR if this is the last chunk and it has 4 items, we need a new row for the + button?
-            // The requirement says "When the maximum number in a row is reached, a new row is added below."
-            // This implies the + button might move to the next row.
-            
-            if (index == chunks.lastIndex) {
-                if (chunk.size < 4) {
-                    AddCategoryButton(
-                        onAdd = onAddCategory,
-                        dialogTitle = addDialogTitle,
-                        dialogLabel = addDialogLabel,
-                        suggestions = suggestions
-                    )
-                }
-            }
+    val allPhases = listOf(fixedPhase) + customPhases
+
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), // Center align
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        allPhases.forEach { phase ->
+            CategoryChip(
+                label = phase,
+                isSelected = phase == selectedPhase,
+                onClick = { onPhaseSelect(phase) },
+                onLongClick = { },
+                isEditable = phase != fixedPhase,
+                onRemove = { onRemovePhase(phase) },
+                onRename = { newName -> onRenamePhase(phase, newName) },
+                editDialogTitle = "Edit phase",
+                editDialogLabel = "Phase name"
+            )
         }
 
-        // If the last chunk was full (4 items), we need a new row just for the + button
-        if (index == chunks.lastIndex && chunk.size == 4) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AddCategoryButton(
-                    onAdd = onAddCategory,
-                    dialogTitle = addDialogTitle,
-                    dialogLabel = addDialogLabel,
-                    suggestions = suggestions
+        AddCategoryButton(
+            onAdd = onAddPhase,
+            dialogTitle = "Add phase",
+            dialogLabel = "Phase name"
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PlayerSection(
+    fixedPlayer: String,
+    players: List<String>,
+    selectedPlayer: String,
+    onPlayerSelect: (String) -> Unit,
+    onAddPlayer: (String) -> Unit,
+    onRemovePlayer: (String) -> Unit,
+    onRenamePlayer: (String, String) -> Unit,
+    suggestions: List<String>
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // "Everyone" on its own row, full width (but visually just a wide chip or centered)
+        // User asked for "Everyone" much wider and be in its row on its own.
+        CategoryChip(
+            label = fixedPlayer,
+            isSelected = fixedPlayer == selectedPlayer,
+            onClick = { onPlayerSelect(fixedPlayer) },
+            onLongClick = { },
+            isEditable = false,
+            onRemove = { },
+            onRename = { },
+            editDialogTitle = "",
+            editDialogLabel = "",
+            modifier = Modifier.fillMaxWidth(0.8f) // Make it wider
+        )
+
+        // Other players + Add button
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), // Center align
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            players.forEach { player ->
+                CategoryChip(
+                    label = player,
+                    isSelected = player == selectedPlayer,
+                    onClick = { onPlayerSelect(player) },
+                    onLongClick = { },
+                    isEditable = true,
+                    onRemove = { onRemovePlayer(player) },
+                    onRename = { newName -> onRenamePlayer(player, newName) },
+                    editDialogTitle = "Edit player",
+                    editDialogLabel = "Player name"
                 )
             }
+
+            AddCategoryButton(
+                onAdd = onAddPlayer,
+                dialogTitle = "Add player",
+                dialogLabel = "Player name",
+                suggestions = suggestions,
+                existingItems = players
+            )
         }
     }
-    
-    // If there are no dynamic categories, we still have the fixed one.
-    // The loop above handles it.
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -194,7 +180,8 @@ private fun CategoryChip(
     onRemove: () -> Unit,
     onRename: (String) -> Unit,
     editDialogTitle: String,
-    editDialogLabel: String
+    editDialogLabel: String,
+    modifier: Modifier = Modifier
 ) {
     var showDialog by remember { mutableStateOf(false) }
     
@@ -216,7 +203,7 @@ private fun CategoryChip(
     }
 
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .height(40.dp)
             .combinedClickable(
                 onClick = onClick,
@@ -233,7 +220,17 @@ private fun CategoryChip(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier
+                .clip(RoundedCornerShape(50)) // Clip content to shape to fix ripple clipping
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = {
+                        if (isEditable) {
+                            showDialog = true
+                        }
+                    }
+                )
+                .padding(horizontal = 16.dp)
         ) {
             Text(
                 text = label,
@@ -249,7 +246,8 @@ private fun AddCategoryButton(
     onAdd: (String) -> Unit,
     dialogTitle: String,
     dialogLabel: String,
-    suggestions: List<String> = emptyList()
+    suggestions: List<String> = emptyList(),
+    existingItems: List<String> = emptyList()
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -262,7 +260,8 @@ private fun AddCategoryButton(
             },
             title = dialogTitle,
             label = dialogLabel,
-            suggestions = suggestions
+            suggestions = suggestions,
+            existingItems = existingItems
         )
     }
 
@@ -294,15 +293,24 @@ private fun AddCategoryDialog(
     onConfirm: (String) -> Unit,
     title: String,
     label: String,
-    suggestions: List<String> = emptyList()
+    suggestions: List<String> = emptyList(),
+    existingItems: List<String> = emptyList()
 ) {
     var textState by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
     var expanded by remember { mutableStateOf(false) }
     
-    val filteredSuggestions = remember(textState.text, suggestions) {
-        if (textState.text.isBlank()) suggestions
-        else suggestions.filter { it.contains(textState.text, ignoreCase = true) && !it.equals(textState.text, ignoreCase = true) }
+    val filteredSuggestions = remember(textState.text, suggestions, existingItems) {
+        val currentInput = textState.text.trim()
+        // Filter out items that are already added
+        val availableSuggestions = suggestions.filter { suggestion ->
+            !existingItems.any { it.equals(suggestion, ignoreCase = true) }
+        }
+        
+        if (currentInput.isBlank()) availableSuggestions
+        else availableSuggestions.filter { 
+            it.contains(currentInput, ignoreCase = true) && !it.equals(currentInput, ignoreCase = true) 
+        }
     }
     
     AlertDialog(
@@ -319,6 +327,9 @@ private fun AddCategoryDialog(
                         },
                         label = { Text(label) },
                         singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
+                        ),
                         modifier = Modifier.focusRequester(focusRequester).fillMaxWidth()
                     )
                     
@@ -357,7 +368,7 @@ private fun AddCategoryDialog(
             TextButton(
                 onClick = {
                     if (textState.text.isNotBlank()) {
-                        onConfirm(textState.text)
+                        onConfirm(textState.text.trim())
                     }
                 }
             ) {
@@ -391,15 +402,27 @@ private fun EditCategoryDialog(
                 )
             }
         },
+
         confirmButton = {
-            TextButton(
-                onClick = { 
-                    if (text.isNotBlank()) {
-                        onConfirm(text)
-                    }
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Rename")
+                TextButton(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete type")
+                }
+                TextButton(
+                    onClick = { 
+                        if (text.isNotBlank()) {
+                            onConfirm(text.trim())
+                        }
+                    }
+                ) {
+                    Text("Rename")
+                }
             }
         }
     )

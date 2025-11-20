@@ -36,13 +36,15 @@ fun ConfigurationScreen(
     formatTime: (Int) -> String,
     activeGameId: String?,
     games: List<Game>,
-    selectedCategory: String,
-    customCategories: List<String>,
+    selectedPhase: String,
+    selectedPlayer: String,
+    customPhases: List<String>,
     playerCategories: List<String>,
-    onCategorySelect: (String) -> Unit,
-    onAddCustomCategory: (String) -> Unit,
-    onRemoveCustomCategory: (String) -> Unit,
-    onRenameCustomCategory: (String, String) -> Unit,
+    onPhaseSelect: (String) -> Unit,
+    onPlayerSelect: (String) -> Unit,
+    onAddCustomPhase: (String) -> Unit,
+    onRemoveCustomPhase: (String) -> Unit,
+    onRenameCustomPhase: (String, String) -> Unit,
     onAddPlayerCategory: (String) -> Unit,
     onRemovePlayerCategory: (String) -> Unit,
     onRenamePlayerCategory: (String, String) -> Unit,
@@ -93,13 +95,15 @@ fun ConfigurationScreen(
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     CategoryList(
-                        selectedCategory = selectedCategory,
-                        customCategories = customCategories,
+                        selectedPhase = selectedPhase,
+                        selectedPlayer = selectedPlayer,
+                        customPhases = customPhases,
                         playerCategories = playerCategories,
-                        onCategorySelect = onCategorySelect,
-                        onAddCustomCategory = onAddCustomCategory,
-                        onRemoveCustomCategory = onRemoveCustomCategory,
-                        onRenameCustomCategory = onRenameCustomCategory,
+                        onPhaseSelect = onPhaseSelect,
+                        onPlayerSelect = onPlayerSelect,
+                        onAddCustomPhase = onAddCustomPhase,
+                        onRemoveCustomPhase = onRemoveCustomPhase,
+                        onRenameCustomPhase = onRenameCustomPhase,
                         onAddPlayerCategory = onAddPlayerCategory,
                         onRemovePlayerCategory = onRemovePlayerCategory,
                         onRenamePlayerCategory = onRenamePlayerCategory,
@@ -123,19 +127,21 @@ fun ConfigurationScreen(
                     if (!isLandscape) {
                         // Portrait: CategoryList above the card
                         CategoryList(
-                            selectedCategory = selectedCategory,
-                            customCategories = customCategories,
+                            selectedPhase = selectedPhase,
+                            selectedPlayer = selectedPlayer,
+                            customPhases = customPhases,
                             playerCategories = playerCategories,
-                            onCategorySelect = onCategorySelect,
-                            onAddCustomCategory = onAddCustomCategory,
-                            onRemoveCustomCategory = onRemoveCustomCategory,
-                            onRenameCustomCategory = onRenameCustomCategory,
+                            onPhaseSelect = onPhaseSelect,
+                            onPlayerSelect = onPlayerSelect,
+                            onAddCustomPhase = onAddCustomPhase,
+                            onRemoveCustomPhase = onRemoveCustomPhase,
+                            onRenameCustomPhase = onRenameCustomPhase,
                             onAddPlayerCategory = onAddPlayerCategory,
                             onRemovePlayerCategory = onRemovePlayerCategory,
                             onRenamePlayerCategory = onRenamePlayerCategory,
                             playerSuggestions = playerSuggestions,
                             modifier = Modifier
-                                .padding(bottom = 24.dp, start = 16.dp)
+                                .padding(bottom = 24.dp, start = 16.dp, end = 16.dp)
                                 .width(cardSize) // Align width with card
                         )
                     }

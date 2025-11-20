@@ -9,5 +9,7 @@ data class Round(
     val overtime: Int,        // Overtime seconds (0 if none)
     val timestamp: Long,      // When round was completed (epoch millis)
     val gameId: String,       // ID of the game this round belongs to
-    val category: String = "Everyone" // Category of the round
+    val category: String = "Everyone", // Deprecated: kept for backward compatibility
+    val phase: String = "Setup",       // New: Phase of the round
+    val player: String = "Everyone"    // New: Player of the round
 )

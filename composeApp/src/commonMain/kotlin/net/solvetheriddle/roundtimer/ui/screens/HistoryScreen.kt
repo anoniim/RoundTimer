@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -29,7 +28,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.foundation.clickable
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -40,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -52,7 +50,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
-import net.solvetheriddle.roundtimer.ui.components.CategoryList
 import net.solvetheriddle.roundtimer.ui.components.SetAppropriateStatusBarColor
 import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 import kotlin.time.ExperimentalTime
@@ -66,45 +63,101 @@ fun HistoryScreen(
     onDeleteRound: (String) -> Unit,
     onUndoDelete: () -> Unit,
     onResetHistory: (String) -> Unit,
-    onUpdateRound: (String, Int, Int, String) -> Unit,
+    onUpdateRound: (String, Int, Int, String, String) -> Unit,
     formatTime: (Int) -> String
 ) {
     val isLandscape = rememberIsLandscape()
 
-    // Local state for category filter
-    var selectedFilterCategory by remember { mutableStateOf("All") }
+    // Local state for filters
+    var selectedFilterPhase by remember { mutableStateOf("All") }
+    var selectedFilterPlayer by remember { mutableStateOf("All") }
 
-    // Collect all unique categories from rounds in the current game
-    val allCategories = remember(state.rounds, state.activeGameId) {
-        val categories = mutableSetOf<String>("All")
-        val gameRounds = if (state.activeGameId != null) {
-            state.rounds.filter { it.gameId == state.activeGameId }
-        } else {
-            state.rounds
-        }
-        gameRounds.forEach { categories.add(it.category) }
-        categories.toList()
-    }
-
-    val filteredRounds = remember(state.rounds, state.activeGameId, selectedFilterCategory) {
-        // First filter by active game
+    // Collect unique phases and players from rounds in the current game
+    val (allPhases, allPlayers) = remember(state.rounds, state.activeGameId) {
+        val phases = mutableSetOf("All")
+        val players = mutableSetOf("All")
+        
         val gameRounds = if (state.activeGameId != null) {
             state.rounds.filter { it.gameId == state.activeGameId }
         } else {
             state.rounds
         }
         
-        // Then filter by category
-        if (selectedFilterCategory == "All") {
-            gameRounds
-        } else {
-            gameRounds.filter { it.category == selectedFilterCategory }
+        gameRounds.forEach { 
+            phases.add(it.phase)
+            players.add(it.player)
         }
+        
+        Pair(phases.toList().sorted(), players.toList().sorted())
+    }
+
+    // Filtered rounds logic
+    val filteredRounds = remember(state.rounds, state.activeGameId, selectedFilterPhase, selectedFilterPlayer) {
+        var rounds = if (state.activeGameId != null) {
+            state.rounds.filter { it.gameId == state.activeGameId }
+        } else {
+            state.rounds
+        }
+
+        if (selectedFilterPhase != "All") {
+            rounds = rounds.filter { it.phase == selectedFilterPhase }
+        }
+        
+        if (selectedFilterPlayer != "All") {
+            rounds = rounds.filter { it.player == selectedFilterPlayer }
+        }
+        
+        rounds
+    }
+
+    // Available players for the selected phase (for dependent filtering)
+    val availablePlayersForFilter = remember(state.rounds, state.activeGameId, selectedFilterPhase) {
+        if (selectedFilterPhase == "All") {
+            allPlayers
+        } else {
+            val players = mutableSetOf("All")
+            val gameRounds = if (state.activeGameId != null) {
+                state.rounds.filter { it.gameId == state.activeGameId }
+            } else {
+                state.rounds
+            }
+            gameRounds.filter { it.phase == selectedFilterPhase }.forEach { players.add(it.player) }
+            players.toList().sorted()
+        }
+    }
+
+    // Calculate available options for editing (include configured types + existing in rounds)
+    val availableEditPhases = remember(state.rounds, state.activeGameId, state.games, state.customTypes) {
+        val phases = mutableSetOf("Setup")
+        val activeGame = state.games.find { it.id == state.activeGameId }
+        if (activeGame != null) {
+            phases.addAll(activeGame.customTypes)
+        } else {
+            phases.addAll(state.customTypes)
+        }
+        // Add from existing rounds
+        val gameRounds = if (state.activeGameId != null) state.rounds.filter { it.gameId == state.activeGameId } else state.rounds
+        gameRounds.forEach { phases.add(it.phase) }
+        phases.toList().sorted()
+    }
+
+    val availableEditPlayers = remember(state.rounds, state.activeGameId, state.games, state.playerTypes) {
+        val players = mutableSetOf("Everyone")
+        val activeGame = state.games.find { it.id == state.activeGameId }
+        if (activeGame != null) {
+            players.addAll(activeGame.playerTypes)
+        } else {
+            players.addAll(state.playerTypes)
+        }
+        // Add from existing rounds
+        val gameRounds = if (state.activeGameId != null) state.rounds.filter { it.gameId == state.activeGameId } else state.rounds
+        gameRounds.forEach { players.add(it.player) }
+        players.toList().sorted()
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var showResetDialog by remember { mutableStateOf(false) } // Added for reset dialog
+    var showResetDialog by remember { mutableStateOf(false) }
     var editingRound by remember { mutableStateOf<Round?>(null) }
 
     SetAppropriateStatusBarColor()
@@ -135,8 +188,6 @@ fun HistoryScreen(
             )
         }
     ) { paddingValues ->
-        val lazyListState = rememberLazyListState()
-
         Box(
             modifier = Modifier
                 .padding(paddingValues)
@@ -184,13 +235,19 @@ fun HistoryScreen(
                                 .padding(16.dp)
                                 .verticalScroll(rememberScrollState())
                         ) {
-                            CategoryFilter(
-                                categories = allCategories,
-                                selectedCategory = selectedFilterCategory,
-                                onCategorySelected = { selectedFilterCategory = it }
+                            FiltersSection(
+                                phases = allPhases,
+                                selectedPhase = selectedFilterPhase,
+                                onPhaseSelected = { 
+                                    selectedFilterPhase = it 
+                                    selectedFilterPlayer = "All" // Reset player filter when phase changes
+                                },
+                                players = availablePlayersForFilter,
+                                selectedPlayer = selectedFilterPlayer,
+                                onPlayerSelected = { selectedFilterPlayer = it }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            GameStats(filteredRounds, formatTime) // Use filteredRounds for stats
+                            GameStats(filteredRounds, formatTime)
                         }
 
                         // Right side: Round List
@@ -205,11 +262,19 @@ fun HistoryScreen(
                                 items = filteredRounds.reversed(),
                                 key = { it.id }
                             ) { round ->
-                                val typeRounds = state.rounds.filter { it.gameId == state.activeGameId && it.category == round.category }
+                                // Calculate index within the current filter context or global context?
+                                // Usually round number is per game.
+                                // Let's show the index relative to the game rounds of the same type (Phase+Player)
+                                val typeRounds = state.rounds.filter { 
+                                    it.gameId == state.activeGameId && 
+                                    it.phase == round.phase && 
+                                    it.player == round.player 
+                                }
                                 val typeIndex = typeRounds.indexOf(round) + 1
+                                
                                 SwipeableRoundItem(
                                     round = round,
-                                    roundNumber = typeIndex, // Pass type index instead of global index
+                                    roundNumber = typeIndex,
                                     onDelete = {
                                         onDeleteRound(round.id)
                                         scope.launch {
@@ -232,13 +297,19 @@ fun HistoryScreen(
                     // Portrait
                     Column(modifier = Modifier.fillMaxSize()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            CategoryFilter(
-                                categories = allCategories,
-                                selectedCategory = selectedFilterCategory,
-                                onCategorySelected = { selectedFilterCategory = it }
+                            FiltersSection(
+                                phases = allPhases,
+                                selectedPhase = selectedFilterPhase,
+                                onPhaseSelected = { 
+                                    selectedFilterPhase = it 
+                                    selectedFilterPlayer = "All" // Reset player filter when phase changes
+                                },
+                                players = availablePlayersForFilter,
+                                selectedPlayer = selectedFilterPlayer,
+                                onPlayerSelected = { selectedFilterPlayer = it }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            GameStats(filteredRounds, formatTime) // Use filteredRounds for stats
+                            GameStats(filteredRounds, formatTime)
                         }
 
                         LazyColumn(
@@ -250,8 +321,13 @@ fun HistoryScreen(
                                 items = filteredRounds.reversed(),
                                 key = { it.id }
                             ) { round ->
-                                val typeRounds = state.rounds.filter { it.gameId == state.activeGameId && it.category == round.category }
+                                val typeRounds = state.rounds.filter { 
+                                    it.gameId == state.activeGameId && 
+                                    it.phase == round.phase && 
+                                    it.player == round.player 
+                                }
                                 val typeIndex = typeRounds.indexOf(round) + 1
+                                
                                 SwipeableRoundItem(
                                     round = round,
                                     roundNumber = typeIndex,
@@ -276,6 +352,7 @@ fun HistoryScreen(
                 }
             }
         }
+        
         if (showResetDialog) {
             AlertDialog(
                 onDismissRequest = { showResetDialog = false },
@@ -296,14 +373,16 @@ fun HistoryScreen(
                 }
             )
         }
+        
         editingRound?.let { round ->
             EditRoundDialog(
                 round = round,
-                availableCategories = allCategories.filter { it != "All" },
+                availablePhases = availableEditPhases,
+                availablePlayers = availableEditPlayers,
                 formatTime = formatTime,
                 onDismiss = { editingRound = null },
-                onSave = { newDuration, newOvertime, newCategory ->
-                    onUpdateRound(round.id, newDuration, newOvertime, newCategory)
+                onSave = { newDuration, newOvertime, newPhase, newPlayer ->
+                    onUpdateRound(round.id, newDuration, newOvertime, newPhase, newPlayer)
                     editingRound = null
                 },
                 onDelete = {
@@ -325,10 +404,37 @@ fun HistoryScreen(
 }
 
 @Composable
+private fun FiltersSection(
+    phases: List<String>,
+    selectedPhase: String,
+    onPhaseSelected: (String) -> Unit,
+    players: List<String>,
+    selectedPlayer: String,
+    onPlayerSelected: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Phase Filter
+        CategoryFilter(
+            categories = phases,
+            selectedCategory = selectedPhase,
+            onCategorySelected = onPhaseSelected,
+            label = "Phase"
+        )
+        
+        // Player Filter
+        CategoryFilter(
+            categories = players,
+            selectedCategory = selectedPlayer,
+            onCategorySelected = onPlayerSelected,
+            label = "Player"
+        )
+    }
+}
+
+@Composable
 private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
     var isExpanded by remember { mutableStateOf(false) }
     
-    // Calculate statistics
     val totalRounds = rounds.size
     val totalTime = rounds.sumOf { it.duration }
     val averageTime = if (totalRounds > 0) totalTime / totalRounds else 0
@@ -338,8 +444,7 @@ private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded }
-            .animateContentSize(),
+            .clickable { isExpanded = !isExpanded },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.background
         ),
@@ -366,17 +471,19 @@ private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
-            if (isExpanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatisticItem("Total rounds", totalRounds.toString())
-                    StatisticItem("Total time", formatTime(totalTime))
-                    StatisticItem("Fastest round", formatTime(shortestRound))
-                    StatisticItem("Slowest round", formatTime(longestRound))
-                    StatisticItem("Average time", formatTime(averageTime))
+            AnimatedVisibility(visible = isExpanded) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        StatisticItem("Total rounds", totalRounds.toString())
+                        StatisticItem("Total time", formatTime(totalTime))
+                        StatisticItem("Fastest round", formatTime(shortestRound))
+                        StatisticItem("Slowest round", formatTime(longestRound))
+                        StatisticItem("Average time", formatTime(averageTime))
+                    }
                 }
             }
         }
@@ -388,9 +495,16 @@ private fun GameStats(rounds: List<Round>, formatTime: (Int) -> String) {
 private fun CategoryFilter(
     categories: List<String>,
     selectedCategory: String,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
+    label: String
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
+        )
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -461,7 +575,6 @@ private fun SwipeableRoundItem(
         }
     )
 
-    // Use a clipped container to ensure rounded corners are respected
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -470,7 +583,6 @@ private fun SwipeableRoundItem(
         SwipeToDismissBox(
             state = swipeableState,
             backgroundContent = {
-                // Delete background - now properly clipped by the parent Box
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -535,23 +647,23 @@ private fun RoundItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left side: Round Number (now Category Name) and Time
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${round.category} #$roundNumber", // Display category name and number
+                    text = "${round.phase} - ${round.player} #$roundNumber",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
+                // Calculate start time
+                val startTimeMillis = round.timestamp - (round.duration + round.overtime) * 1000L
                 Text(
-                    text = formatTime(round.duration), // Duration only
+                    text = formatTimestamp(startTimeMillis),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Right side: Total Duration (including overtime)
             Text(
                 text = formatTime(round.duration + round.overtime),
                 fontSize = 24.sp,
@@ -574,11 +686,8 @@ private fun RepeatingIconButton(
 
     LaunchedEffect(isPressed) {
         if (isPressed) {
-            // First click happens immediately
             onClick()
-            // Wait before starting continuous updates
             delay(initialDelayMillis)
-            // Then repeat continuously
             while (isPressed) {
                 onClick()
                 delay(intervalMillis)
@@ -613,32 +722,32 @@ private fun RepeatingIconButton(
 @Composable
 private fun EditRoundDialog(
     round: Round,
-    availableCategories: List<String>,
+    availablePhases: List<String>,
+    availablePlayers: List<String>,
     formatTime: (Int) -> String,
     onDismiss: () -> Unit,
-    onSave: (Int, Int, String) -> Unit,
+    onSave: (Int, Int, String, String) -> Unit,
     onDelete: () -> Unit
 ) {
     var timeSeconds by remember { mutableStateOf(round.duration) }
     var overtimeSeconds by remember { mutableStateOf(round.overtime) }
-    var selectedCategory by remember { mutableStateOf(round.category) }
-    var expanded by remember { mutableStateOf(false) }
+    var selectedPhase by remember { mutableStateOf(round.phase) }
+    var selectedPlayer by remember { mutableStateOf(round.player) }
+    
+    var phaseExpanded by remember { mutableStateOf(false) }
+    var playerExpanded by remember { mutableStateOf(false) }
 
     val totalSeconds = timeSeconds + overtimeSeconds
     val hadInitialOvertime = remember { round.overtime > 0 }
 
-    // Handle increment: always add to duration
     val handleIncrement = {
         timeSeconds += 5
     }
 
-    // Handle decrement: remove from overtime first, then from duration
     val handleDecrement = {
         if (overtimeSeconds > 0) {
-            // If there's overtime, decrease it first
             overtimeSeconds = maxOf(0, overtimeSeconds - 5)
         } else {
-            // Otherwise decrease duration (but not below 0)
             timeSeconds = maxOf(0, timeSeconds - 5)
         }
     }
@@ -650,37 +759,75 @@ private fun EditRoundDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Category/Type selector
+                // Phase selector
                 Column {
                     Text(
-                        text = "Type",
+                        text = "Phase",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded }
+                        expanded = phaseExpanded,
+                        onExpandedChange = { phaseExpanded = !phaseExpanded }
                     ) {
                         OutlinedTextField(
-                            value = selectedCategory,
+                            value = selectedPhase,
                             onValueChange = {},
                             readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = phaseExpanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(),
                             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                         )
                         ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
+                            expanded = phaseExpanded,
+                            onDismissRequest = { phaseExpanded = false }
                         ) {
-                            availableCategories.forEach { category ->
+                            availablePhases.forEach { phase ->
                                 DropdownMenuItem(
-                                    text = { Text(category) },
+                                    text = { Text(phase) },
                                     onClick = {
-                                        selectedCategory = category
-                                        expanded = false
+                                        selectedPhase = phase
+                                        phaseExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Player selector
+                Column {
+                    Text(
+                        text = "Player",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    ExposedDropdownMenuBox(
+                        expanded = playerExpanded,
+                        onExpandedChange = { playerExpanded = !playerExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedPlayer,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = playerExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = playerExpanded,
+                            onDismissRequest = { playerExpanded = false }
+                        ) {
+                            availablePlayers.forEach { player ->
+                                DropdownMenuItem(
+                                    text = { Text(player) },
+                                    onClick = {
+                                        selectedPlayer = player
+                                        playerExpanded = false
                                     }
                                 )
                             }
@@ -737,7 +884,7 @@ private fun EditRoundDialog(
                 ) {
                     Text("Delete round")
                 }
-                Button(onClick = { onSave(timeSeconds, overtimeSeconds, selectedCategory) }) {
+                Button(onClick = { onSave(timeSeconds, overtimeSeconds, selectedPhase, selectedPlayer) }) {
                     Text("Save")
                 }
             }
@@ -747,7 +894,6 @@ private fun EditRoundDialog(
 
 @OptIn(ExperimentalTime::class)
 private fun formatTimestamp(timestamp: Long): String {
-    // Convert Long timestamp to Instant and format using kotlinx.datetime
     val instant = Instant.fromEpochMilliseconds(timestamp)
     val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
     return "${localDateTime.hour.toString().padStart(2, '0')}:${localDateTime.minute.toString().padStart(2, '0')}"
