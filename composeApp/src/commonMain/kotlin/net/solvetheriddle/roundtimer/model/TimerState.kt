@@ -10,7 +10,10 @@ data class TimerState(
     val rounds: List<Round> = emptyList(),  // Historical rounds array
     val games: List<Game> = emptyList(),
     val activeGameId: String? = null,
-    val settings: SettingsState = SettingsState()
+    val settings: SettingsState = SettingsState(),
+    val selectedCategory: String = "Preparation",
+    val customCategories: List<String> = emptyList(),
+    val playerCategories: List<String> = emptyList()
 ) {
     // Convenience properties to get time values in seconds for display
     val configuredSeconds: Int get() = (configuredTime / 1000).toInt()

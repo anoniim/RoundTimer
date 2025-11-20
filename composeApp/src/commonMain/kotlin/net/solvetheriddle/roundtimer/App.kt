@@ -58,7 +58,17 @@ fun App() {
                         onGamesClick = { currentScreenRoute = Screen.Games.route },
                         formatTime = viewModel::formatTime,
                         activeGameId = state.activeGameId,
-                        games = state.games
+                        games = state.games,
+                        selectedCategory = state.selectedCategory,
+                        customCategories = state.customCategories,
+                        playerCategories = state.playerCategories,
+                        onCategorySelect = viewModel::selectCategory,
+                        onAddCustomCategory = viewModel::addCustomCategory,
+                        onRemoveCustomCategory = viewModel::removeCustomCategory,
+                        onRenameCustomCategory = viewModel::renameCustomCategory,
+                        onAddPlayerCategory = viewModel::addPlayerCategory,
+                        onRemovePlayerCategory = viewModel::removePlayerCategory,
+                        onRenamePlayerCategory = viewModel::renamePlayerCategory
                     )
                 }
                 Screen.ActiveTimer.route -> {

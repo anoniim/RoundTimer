@@ -23,6 +23,7 @@ import net.solvetheriddle.roundtimer.platform.getStatusBarManager
 import net.solvetheriddle.roundtimer.ui.components.ScrollableDial
 import net.solvetheriddle.roundtimer.ui.components.SetAppropriateStatusBarColor
 import net.solvetheriddle.roundtimer.ui.components.StyledCard
+import net.solvetheriddle.roundtimer.ui.components.CategoryList
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -34,7 +35,17 @@ fun ConfigurationScreen(
     onGamesClick: () -> Unit,
     formatTime: (Int) -> String,
     activeGameId: String?,
-    games: List<Game>
+    games: List<Game>,
+    selectedCategory: String,
+    customCategories: List<String>,
+    playerCategories: List<String>,
+    onCategorySelect: (String) -> Unit,
+    onAddCustomCategory: (String) -> Unit,
+    onRemoveCustomCategory: (String) -> Unit,
+    onRenameCustomCategory: (String, String) -> Unit,
+    onAddPlayerCategory: (String) -> Unit,
+    onRemovePlayerCategory: (String) -> Unit,
+    onRenamePlayerCategory: (String, String) -> Unit
 ) {
     SetAppropriateStatusBarColor()
     val isLandscape = rememberIsLandscape()
@@ -73,15 +84,63 @@ fun ConfigurationScreen(
         ) {
             if (isLandscape) {
                 GameInfo(games, activeGameId, Modifier.align(Alignment.TopStart).padding(32.dp).padding(start = 84.dp, top = 16.dp))
+                
+                // Landscape: CategoryList to the right of the card
+                // We need to position it relative to the card or just on the right side
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    CategoryList(
+                        selectedCategory = selectedCategory,
+                        customCategories = customCategories,
+                        playerCategories = playerCategories,
+                        onCategorySelect = onCategorySelect,
+                        onAddCustomCategory = onAddCustomCategory,
+                        onRemoveCustomCategory = onRemoveCustomCategory,
+                        onRenameCustomCategory = onRenameCustomCategory,
+                        onAddPlayerCategory = onAddPlayerCategory,
+                        onRemovePlayerCategory = onRemovePlayerCategory,
+                        onRenamePlayerCategory = onRenamePlayerCategory,
+                        modifier = Modifier
+                            .padding(end = 32.dp)
+                            .widthIn(max = 400.dp)
+                    )
+                }
             }
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 0.9f
-                // Centered StyledCard with scrollable dial
-                StyledCard(
-                    modifier = Modifier.size(cardSize),
+                
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (!isLandscape) {
+                        // Portrait: CategoryList above the card
+                        CategoryList(
+                            selectedCategory = selectedCategory,
+                            customCategories = customCategories,
+                            playerCategories = playerCategories,
+                            onCategorySelect = onCategorySelect,
+                            onAddCustomCategory = onAddCustomCategory,
+                            onRemoveCustomCategory = onRemoveCustomCategory,
+                            onRenameCustomCategory = onRenameCustomCategory,
+                            onAddPlayerCategory = onAddPlayerCategory,
+                            onRemovePlayerCategory = onRemovePlayerCategory,
+                            onRenamePlayerCategory = onRenamePlayerCategory,
+                            modifier = Modifier
+                                .padding(bottom = 24.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        )
+                    }
+                    
+                    // Centered StyledCard with scrollable dial
+                    StyledCard(
+                        modifier = Modifier.size(cardSize),
                     verticalArrangement = Arrangement.Top,
                     content = {
                         // Scrollable dial for time selection
@@ -118,6 +177,7 @@ fun ConfigurationScreen(
                     },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
+                }
             }
         }
     }

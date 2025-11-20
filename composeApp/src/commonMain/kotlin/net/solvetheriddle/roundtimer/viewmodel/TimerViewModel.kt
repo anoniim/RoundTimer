@@ -65,8 +65,12 @@ class TimerViewModel : ViewModel() {
                         currentTime = configuredTime,
                         games = games,
                         activeGameId = activeGameId,
-                        settings = savedSettings
+                        settings = savedSettings,
+                        // TODO: Load categories from storage if we decide to persist them
+                        // For now, we'll start with empty custom/player categories or defaults if needed
+                        // The request implies "Preparation" and "All players" are defaults, which are hardcoded in UI logic or State defaults
                     )
+
                 } catch (e: Exception) {
                     // Continue with empty list
                 }
@@ -287,7 +291,8 @@ class TimerViewModel : ViewModel() {
                 duration = durationSeconds,
                 overtime = currentState.overtimeSeconds,
                 timestamp = roundTimestamp,
-                gameId = currentState.activeGameId!!
+                gameId = currentState.activeGameId!!,
+                category = currentState.selectedCategory
             )
 
             val newRounds = currentState.rounds + round
@@ -497,6 +502,77 @@ class TimerViewModel : ViewModel() {
             viewModelScope.launch {
                 storage.saveGames(newGames)
             }
+        }
+    }
+
+    fun selectCategory(category: String) {
+        _state.value = _state.value.copy(selectedCategory = category)
+        analyticsService.logEvent("category_selected", mapOf("category" to category))
+    }
+
+    fun addCustomCategory(category: String) {
+        val currentCategories = _state.value.customCategories
+        if (!currentCategories.contains(category)) {
+            val newCategories = currentCategories + category
+            _state.value = _state.value.copy(customCategories = newCategories)
+            analyticsService.logEvent("custom_category_added", mapOf("category" to category))
+            // TODO: Persist categories
+        }
+    }
+
+    fun removeCustomCategory(category: String) {
+        val newCategories = _state.value.customCategories - category
+        _state.value = _state.value.copy(customCategories = newCategories)
+        if (_state.value.selectedCategory == category) {
+            _state.value = _state.value.copy(selectedCategory = "Preparation")
+        }
+        analyticsService.logEvent("custom_category_removed", mapOf("category" to category))
+        // TODO: Persist categories
+    }
+
+    fun addPlayerCategory(player: String) {
+        val currentPlayers = _state.value.playerCategories
+        if (!currentPlayers.contains(player)) {
+            val newPlayers = currentPlayers + player
+            _state.value = _state.value.copy(playerCategories = newPlayers)
+            analyticsService.logEvent("player_category_added", mapOf("player" to player))
+            // TODO: Persist categories
+        }
+    }
+
+    fun removePlayerCategory(player: String) {
+        val newPlayers = _state.value.playerCategories - player
+        _state.value = _state.value.copy(playerCategories = newPlayers)
+        if (_state.value.selectedCategory == player) {
+            _state.value = _state.value.copy(selectedCategory = "Preparation")
+        }
+        analyticsService.logEvent("player_category_removed", mapOf("player" to player))
+        // TODO: Persist categories
+    }
+
+    fun renameCustomCategory(oldName: String, newName: String) {
+        val currentCategories = _state.value.customCategories
+        if (currentCategories.contains(oldName) && !currentCategories.contains(newName)) {
+            val newCategories = currentCategories.map { if (it == oldName) newName else it }
+            _state.value = _state.value.copy(
+                customCategories = newCategories,
+                selectedCategory = if (_state.value.selectedCategory == oldName) newName else _state.value.selectedCategory
+            )
+            analyticsService.logEvent("custom_category_renamed", mapOf("old_name" to oldName, "new_name" to newName))
+            // TODO: Persist categories
+        }
+    }
+
+    fun renamePlayerCategory(oldName: String, newName: String) {
+        val currentPlayers = _state.value.playerCategories
+        if (currentPlayers.contains(oldName) && !currentPlayers.contains(newName)) {
+            val newPlayers = currentPlayers.map { if (it == oldName) newName else it }
+            _state.value = _state.value.copy(
+                playerCategories = newPlayers,
+                selectedCategory = if (_state.value.selectedCategory == oldName) newName else _state.value.selectedCategory
+            )
+            analyticsService.logEvent("player_category_renamed", mapOf("old_name" to oldName, "new_name" to newName))
+            // TODO: Persist categories
         }
     }
 
