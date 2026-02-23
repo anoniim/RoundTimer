@@ -19,6 +19,11 @@ actual class SoundPlayer {
     actual fun stopSound() {
         audio?.pause()
     }
+
+    actual fun cleanup() {
+        audio?.pause()
+        audio = null
+    }
 }
 
 actual fun getSoundPlayer(): SoundPlayer = SoundPlayer()

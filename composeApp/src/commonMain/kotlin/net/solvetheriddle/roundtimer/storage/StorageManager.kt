@@ -63,12 +63,11 @@ class RoundTimerStorage(
      */
     suspend fun saveRounds(rounds: List<Round>) {
         try {
-            cachedRounds = rounds
             val jsonString = json.encodeToString(rounds)
             platformStorage.saveString(ROUNDS_KEY, jsonString)
+            cachedRounds = rounds
         } catch (e: Exception) {
             // Keep cached data even if persistence fails
-            cachedRounds = rounds
             throw StorageException("Failed to save rounds", e)
         }
     }
@@ -190,6 +189,10 @@ class RoundTimerStorage(
         try {
             cachedRounds = emptyList()
             platformStorage.remove(ROUNDS_KEY)
+            platformStorage.remove(GAMES_KEY)
+            platformStorage.remove(CONFIGURED_TIME_KEY)
+            platformStorage.remove(ACTIVE_GAME_ID_KEY)
+            platformStorage.remove(SETTINGS_KEY)
         } catch (e: Exception) {
             throw StorageException("Failed to clear storage", e)
         }

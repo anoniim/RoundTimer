@@ -11,9 +11,8 @@ data class TimerState(
     val games: List<Game> = emptyList(),
     val activeGameId: String? = null,
     val settings: SettingsState = SettingsState(),
-    val selectedType: String = "Preparation", // Deprecated
-    val selectedPhase: String = "Setup",      // New
-    val selectedPlayer: String = "Everyone",  // New
+    val selectedPhase: String = "Setup",      // Current phase selection
+    val selectedPlayer: String = "Everyone",  // Current player selection
     val customTypes: List<String> = emptyList(),
     val playerTypes: List<String> = emptyList()
 ) {

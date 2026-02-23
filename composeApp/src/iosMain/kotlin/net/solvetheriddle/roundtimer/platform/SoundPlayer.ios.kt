@@ -37,6 +37,11 @@ actual class SoundPlayer {
     actual fun stopSound() {
         player?.stop()
     }
+
+    actual fun cleanup() {
+        player?.stop()
+        player = null
+    }
 }
 
 actual fun getSoundPlayer(): SoundPlayer = SoundPlayer()

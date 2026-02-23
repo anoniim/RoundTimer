@@ -17,15 +17,11 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 actual class PlatformStorage(private val context: Context) {
     
     actual suspend fun saveString(key: String, value: String) {
-        try {
-            val dataStoreKey = stringPreferencesKey(key)
-            withTimeout(5000) { // 5 second timeout
-                context.dataStore.edit { preferences ->
-                    preferences[dataStoreKey] = value
-                }
+        val dataStoreKey = stringPreferencesKey(key)
+        withTimeout(5000) { // 5 second timeout
+            context.dataStore.edit { preferences ->
+                preferences[dataStoreKey] = value
             }
-        } catch (e: Exception) {
-            throw e
         }
     }
     
@@ -43,15 +39,11 @@ actual class PlatformStorage(private val context: Context) {
     }
 
     actual suspend fun saveLong(key: String, value: Long) {
-        try {
-            val dataStoreKey = longPreferencesKey(key)
-            withTimeout(5000) { // 5 second timeout
-                context.dataStore.edit { preferences ->
-                    preferences[dataStoreKey] = value
-                }
+        val dataStoreKey = longPreferencesKey(key)
+        withTimeout(5000) { // 5 second timeout
+            context.dataStore.edit { preferences ->
+                preferences[dataStoreKey] = value
             }
-        } catch (e: Exception) {
-            throw e
         }
     }
 
