@@ -2,6 +2,7 @@ package net.solvetheriddle.roundtimer.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.draw.clip
@@ -39,9 +40,10 @@ fun CategoryList(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp) // Unified spacing between sections
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Phase Section
+        CategoryTitle("PHASE")
         PhaseSection(
             fixedPhase = "Setup",
             customPhases = customPhases,
@@ -53,6 +55,7 @@ fun CategoryList(
         )
 
         // Player Section
+        CategoryTitle("PLAYER")
         PlayerSection(
             fixedPlayer = "Everyone",
             players = playerCategories,
@@ -63,6 +66,32 @@ fun CategoryList(
             onRenamePlayer = onRenamePlayerCategory,
             suggestions = playerSuggestions
         )
+    }
+}
+
+@Composable
+private fun CategoryTitle(title: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        val lineModifier = Modifier
+            .weight(1f)
+            .height(1.dp)
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        
+        Box(modifier = lineModifier)
+        Text(
+            text = "   $title   ",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 1.sp
+        )
+        Box(modifier = lineModifier)
     }
 }
 
