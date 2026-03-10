@@ -116,7 +116,7 @@ fun GamesScreen(
 
     if (showNewGameDialog) {
         NewGameDialog(
-            existingGameNames = state.games.map { it.name }.filter { it.isNotEmpty() }.distinct(),
+            existingGameNames = sortedGames.map { it.name }.filter { it.isNotEmpty() }.distinct(),
             onDismiss = { showNewGameDialog = false },
             onStart = { name ->
                 onCreateNewGame(name)
@@ -127,6 +127,10 @@ fun GamesScreen(
     }
 
     val isLandscape = rememberIsLandscape()
+
+    val sortedGames = remember(state.games) {
+        state.games.sortedChronologically()
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -171,7 +175,7 @@ fun GamesScreen(
             { Spacer(Modifier.height(0.dp)) }
         }
     ) { paddingValues ->
-        if (state.games.isEmpty()) {
+        if (sortedGames.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize()
                     .background(
@@ -211,7 +215,7 @@ fun GamesScreen(
                                 .fillMaxHeight(),
                             contentPadding = PaddingValues(start = 96.dp)
                         ) {
-                            items(state.games) { game ->
+                            items(sortedGames) { game ->
                                 val gameRounds = state.rounds.filter { it.gameId == game.id }
                                 val totalRounds = gameRounds.size
                                 val totalTime = gameRounds.sumOf { it.duration }
@@ -268,7 +272,7 @@ fun GamesScreen(
                             .fillMaxSize()
                             .padding(horizontal = 16.dp)
                     ) {
-                        items(state.games) { game ->
+                        items(sortedGames) { game ->
                             val gameRounds = state.rounds.filter { it.gameId == game.id }
                             val totalRounds = gameRounds.size
                             val totalTime = gameRounds.sumOf { it.duration }

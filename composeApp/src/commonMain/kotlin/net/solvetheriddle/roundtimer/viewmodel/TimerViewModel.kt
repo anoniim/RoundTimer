@@ -57,7 +57,7 @@ class TimerViewModel : ViewModel() {
                 try {
                     val savedRounds = storage.loadRounds()
                     val configuredTime = storage.loadConfiguredTime() ?: _state.value.configuredTime
-                    val games = storage.loadGames().sortedByDescending { it.id }
+                    val games = storage.loadGames().sortedChronologically()
                     val activeGameId = storage.loadActiveGameId() ?: games.firstOrNull()?.id
                     val savedSettings = storage.loadSettings() ?: _state.value.settings
                     _state.value = _state.value.copy(
@@ -149,8 +149,9 @@ class TimerViewModel : ViewModel() {
         screenLocker.lock()
         var currentState = _state.value
         if (currentState.activeGameId == null) {
-            val newGame = Game(id = Clock.System.now().toEpochMilliseconds().toString(), date = getCurrentDate(), name = "")
-            val newGames = currentState.games + newGame
+            val now = Clock.System.now().toEpochMilliseconds()
+            val newGame = Game(id = now.toString(), timestamp = now, date = getCurrentDate(), name = "")
+            val newGames = (currentState.games + newGame).sortedChronologically()
             currentState = currentState.copy(games = newGames, activeGameId = newGame.id)
             analyticsService.logEvent(
                 "game_created", mapOf("game_id" to newGame.id, "game_date" to newGame.date, "game_name" to newGame.name)
@@ -458,18 +459,19 @@ class TimerViewModel : ViewModel() {
 
     fun createNewGame(name: String) {
         val existingGame = _state.value.games.find { it.name.equals(name, ignoreCase = true) }
+        val now = Clock.System.now().toEpochMilliseconds()
         
         val newGame = Game(
-            id = uuid(),
+            id = now.toString(),
+            timestamp = now,
             date = getCurrentDate(),
-            name = name,
             // Copy types and configurations from existing game if found, otherwise use defaults
             customTypes = existingGame?.customTypes ?: emptyList(),
             playerTypes = existingGame?.playerTypes ?: emptyList(),
             typeConfigurations = existingGame?.typeConfigurations ?: emptyMap()
         )
         
-        val updatedGames = listOf(newGame) + _state.value.games
+        val updatedGames = (listOf(newGame) + _state.value.games).sortedChronologically()
         _state.value = _state.value.copy(
             games = updatedGames,
             activeGameId = newGame.id,
@@ -510,7 +512,7 @@ class TimerViewModel : ViewModel() {
             } else {
                 it
             }
-        }.sortedByDescending { it.id }
+        }.sortedChronologically()
         _state.value = _state.value.copy(games = updatedGames)
         analyticsService.logEvent("game_name_updated", mapOf("game_id" to gameId, "new_name" to name))
         viewModelScope.launch {
@@ -556,7 +558,7 @@ class TimerViewModel : ViewModel() {
     fun deleteGame(gameId: String) {
         val currentState = _state.value
         deletedGame = currentState.games.find { it.id == gameId }
-        val newGames = currentState.games.filter { it.id != gameId }.sortedByDescending { it.id }
+        val newGames = currentState.games.filter { it.id != gameId }.sortedChronologically()
         val newActiveGameId = if (currentState.activeGameId == gameId) {
             newGames.firstOrNull()?.id
         } else {
@@ -572,7 +574,7 @@ class TimerViewModel : ViewModel() {
 
     fun undoDeleteGame() {
         deletedGame?.let {
-            val newGames = (_state.value.games + it).sortedByDescending { it.id }
+            val newGames = (_state.value.games + it).sortedChronologically()
             _state.value = _state.value.copy(games = newGames)
             analyticsService.logEvent("game_delete_undone", mapOf("game_id" to it.id))
             viewModelScope.launch {

@@ -7,7 +7,11 @@ data class Game(
     val id: String, // Unique ID
     val date: String, // Date string
     val name: String = "",
+    val timestamp: Long = 0L,
     val customTypes: List<String> = emptyList(),
     val playerTypes: List<String> = emptyList(),
     val typeConfigurations: Map<String, Long> = emptyMap() // Map of Type Name -> Configured Time (millis)
 )
+
+fun List<Game>.sortedChronologically(): List<Game> =
+    this.sortedByDescending { it.timestamp.takeIf { t -> t > 0L } ?: it.id.toLongOrNull() ?: 0L }
