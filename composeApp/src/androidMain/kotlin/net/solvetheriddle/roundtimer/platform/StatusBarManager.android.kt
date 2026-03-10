@@ -34,7 +34,7 @@ actual class StatusBarManager {
             }
         } else {
             // Below Android 11
-            WindowCompat.setDecorFitsSystemWindows(currentActivity.window, false)
+            // WindowCompat.setDecorFitsSystemWindows(currentActivity.window, false)
             val windowInsetsController = WindowCompat.getInsetsController(currentActivity.window, currentActivity.window.decorView)
             windowInsetsController.isAppearanceLightStatusBars = isDarkContent
         }

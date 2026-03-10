@@ -174,7 +174,6 @@ fun GamesScreen(
         if (state.games.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize()
-                    .padding(paddingValues)
                     .background(
                         brush = Brush.verticalGradient(
                             colors = listOf(
@@ -182,7 +181,8 @@ fun GamesScreen(
                                 MaterialTheme.colorScheme.background,
                             )
                         )
-                    ),
+                    )
+                    .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 Text("Your games will be shown here", color = MaterialTheme.colorScheme.onBackground)
