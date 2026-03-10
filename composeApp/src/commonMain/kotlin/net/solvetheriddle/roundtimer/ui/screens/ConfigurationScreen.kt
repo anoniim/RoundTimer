@@ -3,7 +3,9 @@ package net.solvetheriddle.roundtimer.ui.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.History
@@ -56,18 +58,17 @@ fun ConfigurationScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         floatingActionButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(start = 32.dp)
-                    .padding(horizontal = if (isLandscape) 96.dp else 0.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                GamesButton(onGamesClick)
-                if (!isLandscape) {
+            if (!isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(start = 32.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    GamesButton(onGamesClick)
                     GameInfo(games, activeGameId, Modifier.weight(1f))
+                    HistoryButton(onHistoryClick)
                 }
-                HistoryButton(onHistoryClick)
             }
         }
     ) { paddingValues ->
@@ -86,46 +87,110 @@ fun ConfigurationScreen(
             contentAlignment = Alignment.Center
         ) {
             if (isLandscape) {
-                GameInfo(games, activeGameId, Modifier.align(Alignment.TopStart).padding(32.dp).padding(start = 84.dp, top = 16.dp))
-                
-                // Landscape: CategoryList to the right of the card
-                // We need to position it relative to the card or just on the right side
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.CenterEnd
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 32.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
-                    CategoryList(
-                        selectedPhase = selectedPhase,
-                        selectedPlayer = selectedPlayer,
-                        customPhases = customPhases,
-                        playerCategories = playerCategories,
-                        onPhaseSelect = onPhaseSelect,
-                        onPlayerSelect = onPlayerSelect,
-                        onAddCustomPhase = onAddCustomPhase,
-                        onRemoveCustomPhase = onRemoveCustomPhase,
-                        onRenameCustomPhase = onRenameCustomPhase,
-                        onAddPlayerCategory = onAddPlayerCategory,
-                        onRemovePlayerCategory = onRemovePlayerCategory,
-                        onRenamePlayerCategory = onRenamePlayerCategory,
-                        playerSuggestions = playerSuggestions,
+                    // Left side: Selection and Navigation
+                    Column(
                         modifier = Modifier
-                            .padding(end = 32.dp)
-                            .widthIn(max = 400.dp)
-                    )
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(vertical = 16.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CategoryList(
+                            selectedPhase = selectedPhase,
+                            selectedPlayer = selectedPlayer,
+                            customPhases = customPhases,
+                            playerCategories = playerCategories,
+                            onPhaseSelect = onPhaseSelect,
+                            onPlayerSelect = onPlayerSelect,
+                            onAddCustomPhase = onAddCustomPhase,
+                            onRemoveCustomPhase = onRemoveCustomPhase,
+                            onRenameCustomPhase = onRenameCustomPhase,
+                            onAddPlayerCategory = onAddPlayerCategory,
+                            onRemovePlayerCategory = onRemovePlayerCategory,
+                            onRenamePlayerCategory = onRenamePlayerCategory,
+                            playerSuggestions = playerSuggestions,
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState())
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            GamesButton(onGamesClick)
+                            GameInfo(games, activeGameId, Modifier.weight(1f))
+                            HistoryButton(onHistoryClick)
+                        }
+                    }
+
+                    // Right side: Time selection
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth
+                        StyledCard(
+                            modifier = Modifier.size(cardSize),
+                            verticalArrangement = Arrangement.Top,
+                            content = {
+                                ScrollableDial(
+                                    currentSeconds = state.configuredSeconds,
+                                    onValueChange = onTimeChanged,
+                                    formatTime = formatTime,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                        .heightIn(min = 150.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = onStartTimer,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    shape = RoundedCornerShape(40.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                ) {
+                                    Text(
+                                        text = "START",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                }
+                            },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        )
+                    }
                 }
-            }
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 0.9f
-                
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+            } else {
+                // Portrait logic
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (!isLandscape) {
-                        // Portrait: CategoryList above the card
+                    val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 0.9f
+                    
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         CategoryList(
                             selectedPhase = selectedPhase,
                             selectedPlayer = selectedPlayer,
@@ -144,47 +209,45 @@ fun ConfigurationScreen(
                                 .padding(bottom = 24.dp, start = 16.dp, end = 16.dp)
                                 .width(cardSize) // Align width with card
                         )
-                    }
-                    
-                    // Centered StyledCard with scrollable dial
-                    StyledCard(
-                        modifier = Modifier.size(cardSize),
-                    verticalArrangement = Arrangement.Top,
-                    content = {
-                        // Scrollable dial for time selection
-                        ScrollableDial(
-                            currentSeconds = state.configuredSeconds,
-                            onValueChange = onTimeChanged,
-                            formatTime = formatTime,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .heightIn(min = 200.dp)
+                        
+                        // Centered StyledCard with scrollable dial
+                        StyledCard(
+                            modifier = Modifier.size(cardSize),
+                            verticalArrangement = Arrangement.Top,
+                            content = {
+                                ScrollableDial(
+                                    currentSeconds = state.configuredSeconds,
+                                    onValueChange = onTimeChanged,
+                                    formatTime = formatTime,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                        .heightIn(min = 200.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                Button(
+                                    onClick = onStartTimer,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    shape = RoundedCornerShape(40.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                ) {
+                                    Text(
+                                        text = "START",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                }
+                            },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Start button
-                        Button(
-                            onClick = onStartTimer,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(40.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                        ) {
-                            Text(
-                                text = "START",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                )
+                    }
                 }
             }
         }
