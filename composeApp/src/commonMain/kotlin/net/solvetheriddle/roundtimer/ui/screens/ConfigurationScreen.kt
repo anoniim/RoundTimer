@@ -57,20 +57,6 @@ fun ConfigurationScreen(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        floatingActionButton = {
-            if (!isLandscape) {
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(start = 32.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    GamesButton(onGamesClick)
-                    GameInfo(games, activeGameId, Modifier.weight(1f))
-                    HistoryButton(onHistoryClick)
-                }
-            }
-        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -98,6 +84,7 @@ fun ConfigurationScreen(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
+                            .padding(start = 32.dp)
                             .padding(vertical = 16.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -140,7 +127,7 @@ fun ConfigurationScreen(
                             .fillMaxHeight(),
                         contentAlignment = Alignment.Center
                     ) {
-                        val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth
+                        val cardSize = if (maxWidth > maxHeight) maxHeight else maxWidth * 1.2f
                         StyledCard(
                             modifier = Modifier.size(cardSize),
                             verticalArrangement = Arrangement.Top,
@@ -247,6 +234,19 @@ fun ConfigurationScreen(
                             },
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         )
+
+                        Spacer(Modifier.defaultMinSize(minHeight = 56.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = 32.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            GamesButton(onGamesClick)
+                            GameInfo(games, activeGameId, Modifier.weight(1f))
+                            HistoryButton(onHistoryClick)
+                        }
                     }
                 }
             }
