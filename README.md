@@ -28,6 +28,11 @@ A board game round timer application designed to help players time their rounds 
 *   Persistence: Platform-specific storage (`SharedPreferences` on Android, `NSUserDefaults` on iOS)
 *   Targets: Android, iOS, Desktop (JVM), Web (Wasm)
 
+### Audio Resources
+Sound files are intentionally duplicated in two locations to balance cross-platform compatibility with platform-native performance:
+1.  **`commonMain/composeResources/files/`**: Used by iOS, JS, and JVM via Compose Multiplatform Resources.
+2.  **`androidMain/res/raw/`**: Used by Android's native `SoundPool` for ultra-low latency playback. This ensures the best possible performance for timing-critical audio cues on Android devices.
+
 * [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
   It contains several subfolders:
   - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
