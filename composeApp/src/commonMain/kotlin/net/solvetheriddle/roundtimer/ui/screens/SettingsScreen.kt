@@ -121,7 +121,7 @@ private fun SettingItems(settingsState: SettingsState, onSettingChanged: (String
         isChecked = settingsState.isTimeoutGongEnabled
     ) { onSettingChanged("timeoutGong", it) }
     SettingItem(
-        name = "Jonas scolding",
+        name = "Player scolding",
         subtitle = "Quips in Czech after timer expires",
         isChecked = settingsState.isJonasScoldingEnabled
     ) { onSettingChanged("jonasScolding", it) }

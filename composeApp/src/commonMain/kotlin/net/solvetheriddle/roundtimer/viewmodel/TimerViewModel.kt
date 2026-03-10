@@ -257,32 +257,12 @@ class TimerViewModel : ViewModel() {
             }
         }
         if (settings.isJonasScoldingEnabled) {
-            val overtimeCalls = listOf(
-                Sound.OVERTIME_CAS_VYPRSEL,
-                Sound.OVERTIME_JONE_JEDEM,
-                Sound.OVERTIME_JONE_POD,
-                Sound.OVERTIME_SEBEDESTRUKCE,
-                Sound.OVERTIME_SUP_SUP_SUP,
-                Sound.OVERTIME_TAK_ALE_UZ,
-                Sound.OVERTIME_CALL_HELE_TY,
-                Sound.OVERTIME_CALL_KARTY_VSICHNI,
-                Sound.OVERTIME_CALL_KONEC_KARTU,
-                Sound.OVERTIME_CALL_MACKU_NOTAK,
-                Sound.OVERTIME_CALL_NA_KOHO_DO_PULNOCI,
-                Sound.OVERTIME_CALL_NA_KOHO_DO_ZEJTRA,
-                Sound.OVERTIME_CALL_NA_KOHO_CEKAME,
-                Sound.OVERTIME_CALL_TAK_NA_KOHO,
-                Sound.OVERTIME_CALL_TAK_POJD,
-                Sound.OVERTIME_CALL_TAKOVA_DOBA,
-                Sound.OVERTIME_CALL_TENHLE_TAH,
-                Sound.OVERTIME_CALL_TEZKEJ_VYBER,
-                Sound.OVERTIME_CALL_TO_JE_DOBA,
-                Sound.OVERTIME_CALL_TRI_DVA_JEDNA,
-                Sound.OVERTIME_CALL_UZ_JSME_CEKALI,
-                Sound.OVERTIME_CALL_ZAHRAJ_SRDICKEM,
-            )
-            overtimeEvents.add(ScheduledSound(timerDurationMs + (8 * 1000L), overtimeCalls.random()))
-            overtimeEvents.add(ScheduledSound(timerDurationMs + (14 * 1000L), overtimeCalls.random()))
+            Sound.overtimeFirstCall.randomOrNull()?.let { sound ->
+                overtimeEvents.add(ScheduledSound(timerDurationMs + (8 * 1000L), sound))
+            }
+            Sound.overtimeSecondCall.randomOrNull()?.let { sound ->
+                overtimeEvents.add(ScheduledSound(timerDurationMs + (14 * 1000L), sound))
+            }
         }
 
         return overtimeEvents
