@@ -47,7 +47,7 @@ actual class SoundPlayer {
             if (isInitialized) return
             
             try {
-                Sound.values().forEach { sound ->
+                Sound.entries.forEach { sound ->
                     poolMutex[sound] = Mutex()
                     preloadSound(sound)
                 }
