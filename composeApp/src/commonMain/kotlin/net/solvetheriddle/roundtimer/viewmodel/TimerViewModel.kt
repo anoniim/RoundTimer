@@ -27,6 +27,7 @@ import net.solvetheriddle.roundtimer.model.ScheduledSound
 import net.solvetheriddle.roundtimer.model.Sound
 import net.solvetheriddle.roundtimer.model.Round
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.model.sortedChronologically
 import net.solvetheriddle.roundtimer.platform.getScreenLocker
 import net.solvetheriddle.roundtimer.platform.getSoundPlayer
 import net.solvetheriddle.roundtimer.platform.getAnalyticsService

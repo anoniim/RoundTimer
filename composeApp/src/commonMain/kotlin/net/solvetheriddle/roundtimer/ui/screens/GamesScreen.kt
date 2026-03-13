@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import net.solvetheriddle.roundtimer.model.Game
 import net.solvetheriddle.roundtimer.model.TimerState
+import net.solvetheriddle.roundtimer.model.sortedChronologically
 import net.solvetheriddle.roundtimer.ui.components.SetAppropriateStatusBarColor
 import net.solvetheriddle.roundtimer.ui.utils.rememberIsLandscape
 
@@ -87,6 +88,10 @@ fun GamesScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    val sortedGames = remember(state.games) {
+        state.games.sortedChronologically()
+    }
 
     SetAppropriateStatusBarColor()
 
@@ -127,10 +132,6 @@ fun GamesScreen(
     }
 
     val isLandscape = rememberIsLandscape()
-
-    val sortedGames = remember(state.games) {
-        state.games.sortedChronologically()
-    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
