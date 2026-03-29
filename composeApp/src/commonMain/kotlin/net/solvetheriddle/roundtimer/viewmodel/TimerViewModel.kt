@@ -171,7 +171,7 @@ class TimerViewModel : ViewModel() {
         )
         analyticsService.logEvent(
             "timer_started", mapOf(
-                "game_id" to currentState.activeGameId!!,
+                "game_id" to (currentState.activeGameId ?: ""),
                 "configured_time" to currentState.configuredTime.toString(),
                 "subtle_drumming" to currentState.settings.isSubtleDrummingEnabled.toString(),
                 "intense_drumming" to currentState.settings.isIntenseDrummingEnabled.toString(),
@@ -352,7 +352,7 @@ class TimerViewModel : ViewModel() {
         deletedRound = currentState.rounds.find { it.id == roundId }
         val newRounds = currentState.rounds.filter { it.id != roundId }
         _state.value = currentState.copy(rounds = newRounds)
-        analyticsService.logEvent("round_deleted", mapOf("round_id" to roundId, "game_id" to currentState.activeGameId!!))
+        analyticsService.logEvent("round_deleted", mapOf("round_id" to roundId, "game_id" to (currentState.activeGameId ?: "")))
         viewModelScope.launch {
             try {
                 storage.saveRounds(newRounds)
